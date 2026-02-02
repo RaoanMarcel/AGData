@@ -1,0 +1,18 @@
+# --- FLUTTER ---
+/mobile/build/
+/mobile/.dart_tool/
+/mobile/.flutter-plugins
+/mobile/.flutter-plugins-dependencies
+/mobile/.pub-cache/
+/mobile/.vscode/
+
+# --- PYTHON ---
+/inteligencia/__pycache__/
+/inteligencia/*.py[cod]
+/inteligencia/.ipynb_checkpoints/
+/inteligencia/venv/
+/inteligencia/.env
+
+# --- ARQUIVOS DE SISTEMA ---
+.DS_Store
+Thumbs.db

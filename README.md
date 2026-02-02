@@ -1,1 +1,1 @@
-Iiciação de repositório
+Iniciação de repositório

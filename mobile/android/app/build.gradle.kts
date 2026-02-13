@@ -1,7 +1,7 @@
 plugins {
-    id "com.android.application"
-    id "kotlin-android"
-    id "dev.flutter.flutter-gradle-plugin"
+    id("com.android.application")
+    id("kotlin-android")
+    id("dev.flutter.flutter-gradle-plugin")
 }
 
 android {
@@ -18,13 +18,13 @@ android {
         jvmTarget = "1.8"
     }
 
-    // --- BLOCO IMPORTANTE ADICIONADO ---
-    // Isso impede que o Android comprima o modelo da IA e quebre o app
+    // --- A CORREÇÃO MÁGICA (VERSÃO KOTLIN) ---
+    // Isso impede que o Android comprima o modelo da IA
     aaptOptions {
-        noCompress 'tflite'
-        noCompress 'lite'
-    }
-    // -----------------------------------
+            noCompress.add("tflite")
+            noCompress.add("lite")
+        }
+    // -----------------------------------------
 
     defaultConfig {
         applicationId = "com.example.mobile"
@@ -36,7 +36,8 @@ android {
 
     buildTypes {
         release {
-            signingConfig = signingConfigs.debug
+            // Em Kotlin, o acesso ao debug key é um pouco diferente:
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
 }

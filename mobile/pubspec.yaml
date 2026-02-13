@@ -10,13 +10,12 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  cupertino_icons: ^1.0.2
+  image_picker: ^1.0.7
+  tflite_flutter: ^0.11.0
+  image: ^4.1.7
   
-  # Ícones padrão
-  cupertino_icons: ^1.0.8
-  
-  # Nossas ferramentas de trabalho:
-  image_picker: ^1.0.7       # Para tirar fotos
-  flutter_tflite: ^1.0.1     # Para rodar a IA (adicionei esta linha que faltava)
+
 
 dev_dependencies:
   flutter_test:

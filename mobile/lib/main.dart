@@ -1,10 +1,13 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:flutter_tflite/flutter_tflite.dart'; // Importante!
+import 'package:image_picker/image_picker.dart'; 
+import 'classifier.dart'; 
 
 void main() {
-  runApp(const MaterialApp(home: Home()));
+  runApp(const MaterialApp(
+    debugShowCheckedModeBanner: false,
+    home: Home(),
+  ));
 }
 
 class Home extends StatefulWidget {
@@ -18,168 +21,194 @@ class _HomeState extends State<Home> {
   File? _image;
   final _picker = ImagePicker();
   
-  // Variáveis para guardar o resultado da IA
-  String _resultado = "Tire uma foto para analisar";
-  String _confianca = "";
-  bool _loading = false; // Para mostrar um "carregando..."
+  // Instância do classificador
+  final Classifier _classifier = Classifier();
+
+  String _resultado = "Tire uma foto";
+  String _confianca = "para analisar a soja";
+  bool _loading = false;
 
   @override
   void initState() {
     super.initState();
-    _carregarModelo(); // Carrega o cérebro da IA ao iniciar o app
+    _classifier.loadModel();
   }
 
-  // 1. Função para carregar o modelo TFLite
-  Future<void> _carregarModelo() async {
-    try {
-      String? res = await Tflite.loadModel(
-        model: "assets/modelo_soja.tflite",
-        labels: "assets/labels.txt",
-        numThreads: 1, // Usa 1 núcleo do processador
-        isAsset: true,
-        useGpuDelegate: false,
-      );
-      print("Modelo carregado: $res");
-    } catch (e) {
-      print("Erro ao carregar modelo: $e");
-    }
-  }
-
-  // 2. Função para passar a foto para a IA
+  // --- LÓGICA DE CLASSIFICAÇÃO ---
   Future<void> _classificarImagem(File image) async {
     setState(() {
       _loading = true;
+      _resultado = "Analisando...";
+      _confianca = "";
     });
 
-    var output = await Tflite.runModelOnImage(
-      path: image.path,
-      numResults: 2, // Quantos resultados queremos (top 2)
-      threshold: 0.5, // Só mostra se tiver mais de 50% de certeza
-      imageMean: 127.5, // Padrão para normalizar cores
-      imageStd: 127.5,
-    );
+    // --- CORREÇÃO DO ERRO AQUI ---
+    // Pegamos o resultado genérico primeiro
+    var rawOutput = await _classifier.predict(image);
+    
+    // Convertemos explicitamente para lista de double
+    List<double> output = List<double>.from(rawOutput);
 
     setState(() {
       _loading = false;
-      if (output != null && output.isNotEmpty) {
-        // O output vem assim: [{'label': 'Ferrugem', 'confidence': 0.95}]
-        String label = output[0]['label'];
-        // Remove números do label se houver (ex: "0 Ferrugem" vira "Ferrugem")
-        label = label.replaceAll(RegExp(r'[0-9]'), '').trim(); 
-        
-        double confidence = (output[0]['confidence'] * 100);
-        
-        _resultado = label; 
-        _confianca = "${confidence.toStringAsFixed(1)}% de certeza";
+
+      if (output.isEmpty) {
+        _resultado = "Erro na análise";
+        return;
+      }
+
+      // --- SUA LISTA DE DOENÇAS ---
+      // 0: ferrugem
+      // 1: saudavel
+      List<String> labels = ["Ferrugem", "Saudável"]; 
+
+      double maiorValor = 0.0;
+      int indexGanhador = -1;
+
+      for (int i = 0; i < output.length; i++) {
+        if (output[i] > maiorValor) {
+          maiorValor = output[i];
+          indexGanhador = i;
+        }
+      }
+
+      if (indexGanhador != -1) {
+        if (maiorValor < 0.6) {
+             _resultado = "Inconclusivo";
+             _confianca = "Tente melhorar a iluminação";
+        } else {
+             String nomeResultado = indexGanhador < labels.length 
+                 ? labels[indexGanhador] 
+                 : "Desconhecido";
+
+             _resultado = nomeResultado.toUpperCase();
+             _confianca = "${(maiorValor * 100).toStringAsFixed(1)}% de certeza";
+        }
       } else {
-        _resultado = "Não consegui identificar.";
-        _confianca = "";
+        _resultado = "Não identificado";
       }
     });
   }
 
-  // 3. Função de tirar foto (igual a antes, mas chama a IA no final)
+  // --- LÓGICA DA CÂMERA/GALERIA ---
   Future<void> _pickImage(ImageSource source) async {
     try {
       final pickedFile = await _picker.pickImage(source: source);
+      
       if (pickedFile != null) {
         File imagemTemporaria = File(pickedFile.path);
+        
         setState(() {
           _image = imagemTemporaria;
         });
-        // AQUI É A MÁGICA: Chama a IA para ler a foto nova
+        
         _classificarImagem(imagemTemporaria);
       }
     } catch (e) {
-      print("Erro ao pegar imagem: $e");
+      // O 'debugPrint' é preferível ao 'print' no Flutter, mas print funciona
+      debugPrint("Erro ao pegar imagem: $e");
     }
-  }
-
-  @override
-  void dispose() {
-    Tflite.close(); // Libera a memória quando fechar o app
-    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Detector de Ferrugem AGdata'),
-        backgroundColor: const Color(0xFF2E7D32), // Verde soja
+        title: const Text('Detector AGdata'),
+        backgroundColor: const Color(0xFF2E7D32),
+        centerTitle: true,
       ),
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (_image != null)
-              Container(
-                height: 300,
-                width: 300,
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.green, width: 3),
-                  borderRadius: BorderRadius.circular(12),
-                  image: DecorationImage(
-                      image: FileImage(_image!), fit: BoxFit.cover),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // --- PREVIEW DA IMAGEM ---
+              if (_image != null)
+                Container(
+                  height: 300,
+                  width: 300,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[200],
+                    border: Border.all(color: Colors.green, width: 3),
+                    borderRadius: BorderRadius.circular(12),
+                    image: DecorationImage(
+                      image: FileImage(_image!), 
+                      fit: BoxFit.cover
+                    ),
+                  ),
+                )
+              else
+                Container(
+                   height: 300,
+                   width: 300,
+                   decoration: BoxDecoration(
+                    color: Colors.grey[200],
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey, width: 2),
+                   ),
+                   child: const Column( // Adicionado const aqui para otimização
+                     mainAxisAlignment: MainAxisAlignment.center,
+                     children: [
+                       Icon(Icons.add_a_photo, size: 60, color: Colors.grey),
+                       SizedBox(height: 10),
+                       Text("Sem imagem", style: TextStyle(color: Colors.grey))
+                     ],
+                   ),
                 ),
-              )
-            else
-              Image.asset(
-                'assets/logo.png', // Se não tiver logo, ele mostra erro, pode comentar essa linha
-                height: 150,
-                errorBuilder: (c, o, s) => const Icon(Icons.eco, size: 100, color: Colors.green),
-              ),
-            
-            const SizedBox(height: 20),
-            
-            // Exibição do Resultado
-            _loading 
-              ? const CircularProgressIndicator() 
-              : Column(
-                  children: [
-                    Text(
-                      _resultado.toUpperCase(),
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: _resultado.contains("Saudável") ? Colors.green : Colors.red,
+              
+              const SizedBox(height: 30),
+              
+              // --- RESULTADOS ---
+              _loading 
+                ? const CircularProgressIndicator(color: Colors.green)
+                : Column(
+                    children: [
+                      Text(
+                        _resultado,
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: _resultado == "SAUDÁVEL" ? Colors.green : (_resultado == "FERRUGEM" ? Colors.red : Colors.grey[700]),
+                        ),
                       ),
-                    ),
-                    Text(
-                      _confianca,
-                      style: const TextStyle(fontSize: 18, color: Colors.grey),
-                    ),
-                  ],
-                ),
+                      const SizedBox(height: 5),
+                      Text(
+                        _confianca,
+                        style: const TextStyle(fontSize: 18, color: Colors.grey),
+                      ),
+                    ],
+                  ),
 
-            const SizedBox(height: 40),
-            
-            // Botões
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                ElevatedButton.icon(
-                  onPressed: () => _pickImage(ImageSource.camera),
-                  icon: const Icon(Icons.camera_alt),
-                  label: const Text('Câmera'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green[700],
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+              const SizedBox(height: 40),
+              
+              // --- BOTÕES ---
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: () => _pickImage(ImageSource.camera),
+                    icon: const Icon(Icons.camera_alt),
+                    label: const Text('Câmera'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green[700],
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                    ),
                   ),
-                ),
-                const SizedBox(width: 20),
-                ElevatedButton.icon(
-                  onPressed: () => _pickImage(ImageSource.gallery),
-                  icon: const Icon(Icons.image),
-                  label: const Text('Galeria'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue[700],
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                  const SizedBox(width: 20),
+                  ElevatedButton.icon(
+                    onPressed: () => _pickImage(ImageSource.gallery),
+                    icon: const Icon(Icons.image),
+                    label: const Text('Galeria'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue[700],
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                    ),
                   ),
-                ),
-              ],
-            ),
-          ],
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );

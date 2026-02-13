@@ -1,106 +1,119 @@
 import tensorflow as tf
-from tensorflow.keras import layers, models
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from tensorflow.keras.applications import MobileNetV2
+from tensorflow.keras.layers import Dense, GlobalAveragePooling2D, Dropout, Input
+from tensorflow.keras.models import Model
+from tensorflow.keras.optimizers import Adam
 import os
 
-# CONFIGURAÇÕES
-img_height = 224
-img_width = 224
-batch_size = 32
-data_dir = "dataset" 
+# --- CONFIGURAÇÕES ---
+caminho_dataset = r"C:\Users\User\Desktop\AGdata\inteligencia\dataset"
+TAMANHO_IMG = 224
+BATCH_SIZE = 32
+EPOCHS_INICIAIS = 10  # Treino rápido da "cabeça" nova
+EPOCHS_FINETUNING = 10 # Treino lento para refinar o "cérebro"
 
-print("="*40)
+print("========================================")
 print(f"Versão do TensorFlow: {tf.__version__}")
-print(f"Procurando imagens em: {os.path.abspath(data_dir)}")
+print(f"GPU Disponível: {len(tf.config.list_physical_devices('GPU')) > 0}")
 
-# Verifica se a pasta existe
-if not os.path.exists(data_dir):
-    print(f"ERRO: A pasta '{data_dir}' não foi encontrada!")
-    exit()
-
-# CARREGAMENTO DAS IMAGENS
-print("\n--- Carregando Dataset ---")
-try:
-    train_ds = tf.keras.utils.image_dataset_from_directory(
-        data_dir,
-        validation_split=0.2,
-        subset="training",
-        seed=123,
-        image_size=(img_height, img_width),
-        batch_size=batch_size
-    )
-
-    val_ds = tf.keras.utils.image_dataset_from_directory(
-        data_dir,
-        validation_split=0.2,
-        subset="validation",
-        seed=123,
-        image_size=(img_height, img_width),
-        batch_size=batch_size
-    )
-except ValueError as e:
-    print("\nERRO CRÍTICO: Não encontrei imagens suficientes nas pastas.")
-    exit()
-
-class_names = train_ds.class_names
-print(f"\nClasses detectadas: {class_names}")
-
-# MELHORANDO A PERFORMANCE
-AUTOTUNE = tf.data.AUTOTUNE
-train_ds = train_ds.cache().shuffle(1000).prefetch(buffer_size=AUTOTUNE)
-val_ds = val_ds.cache().prefetch(buffer_size=AUTOTUNE)
-
-# --- AQUI ESTÁ A MÁGICA (DATA AUGMENTATION) ---
-data_augmentation = models.Sequential([
-    layers.RandomFlip("horizontal_and_vertical"),
-    layers.RandomRotation(0.2), # Gira a imagem em até 20%
-    layers.RandomZoom(0.2),     # Zoom de até 20%
-    layers.RandomContrast(0.2), # Muda o contraste
-    layers.RandomBrightness(0.2), # Muda o brilho
-])
-
-# CRIANDO O CÉREBRO (MODELO MAIS ROBUSTO)
-model = models.Sequential([
-    layers.Input(shape=(img_height, img_width, 3)),
-    
-    # 1. Aplica as distorções (SÓ NO TREINO)
-    data_augmentation,
-    
-    # 2. Normaliza os pixels (0 a 255 -> 0 a 1)
-    layers.Rescaling(1./255),
-    
-    layers.Conv2D(16, 3, padding='same', activation='relu'),
-    layers.MaxPooling2D(),
-    layers.Conv2D(32, 3, padding='same', activation='relu'),
-    layers.MaxPooling2D(),
-    layers.Conv2D(64, 3, padding='same', activation='relu'),
-    layers.MaxPooling2D(),
-    
-    # Camada extra para aprender mais detalhes
-    layers.Conv2D(128, 3, padding='same', activation='relu'),
-    layers.MaxPooling2D(),
-    
-    layers.Flatten(),
-    
-    # DROPOUT: Desliga 50% dos neurônios aleatoriamente para evitar "decoreba"
-    layers.Dropout(0.5), 
-    
-    layers.Dense(128, activation='relu'),
-    layers.Dense(len(class_names), activation='softmax')
-])
-
-model.compile(optimizer='adam',
-              loss='sparse_categorical_crossentropy',
-              metrics=['accuracy'])
-
-print("\n--- Iniciando Treinamento ROBUSTO ---")
-# Aumentei para 25 épocas porque agora o treino é mais difícil (o que é bom!)
-epochs = 25 
-history = model.fit(
-  train_ds,
-  validation_data=val_ds,
-  epochs=epochs
+# --- PREPARAÇÃO DAS IMAGENS ---
+# Mantivemos rescale=1./255 para facilitar sua vida no Flutter
+train_datagen = ImageDataGenerator(
+    rescale=1./255,
+    rotation_range=40,
+    width_shift_range=0.2,
+    height_shift_range=0.2,
+    shear_range=0.2,
+    zoom_range=0.2,
+    horizontal_flip=True,
+    fill_mode='nearest',
+    validation_split=0.2
 )
 
-# SALVAR
-model.save('modelo_soja.keras') 
-print("\n✅ SUCESSO! Modelo novo salvo como .keras.")
+print("\n--- Carregando Dataset ---")
+train_generator = train_datagen.flow_from_directory(
+    caminho_dataset,
+    target_size=(TAMANHO_IMG, TAMANHO_IMG),
+    batch_size=BATCH_SIZE,
+    class_mode='categorical',
+    subset='training',
+    shuffle=True
+)
+
+validation_generator = train_datagen.flow_from_directory(
+    caminho_dataset,
+    target_size=(TAMANHO_IMG, TAMANHO_IMG),
+    batch_size=BATCH_SIZE,
+    class_mode='categorical',
+    subset='validation'
+)
+
+# Verifica se achou as classes certas
+class_names = list(train_generator.class_indices.keys())
+print(f"Classes detectadas: {class_names}")
+if len(class_names) != 2:
+    print("ERRO CRÍTICO: O dataset precisa ter exatamente 2 pastas (ferrugem e saudavel). Verifique suas pastas!")
+    exit()
+
+# --- FASE 1: TRANSFER LEARNING (CONGELADO) ---
+print("\n--- Construindo MobileNetV2 ---")
+# Carrega a MobileNetV2 sem a parte de classificação (include_top=False)
+base_model = MobileNetV2(weights='imagenet', include_top=False, input_shape=(TAMANHO_IMG, TAMANHO_IMG, 3))
+
+# Congela a base para não destruir o que ela já sabe
+base_model.trainable = False
+
+# Cria a nova cabeça para Soja
+inputs = Input(shape=(TAMANHO_IMG, TAMANHO_IMG, 3))
+x = base_model(inputs, training=False)
+x = GlobalAveragePooling2D()(x)
+x = Dropout(0.2)(x)  # Evita overfitting
+outputs = Dense(2, activation='softmax')(x)
+
+model = Model(inputs, outputs)
+
+model.compile(optimizer=Adam(learning_rate=0.001),
+              loss='categorical_crossentropy',
+              metrics=['accuracy'])
+
+print("\n--- Fase 1: Treinando apenas a classificação ---")
+history = model.fit(
+    train_generator,
+    epochs=EPOCHS_INICIAIS,
+    validation_data=validation_generator
+)
+
+# --- FASE 2: FINE TUNING (DESCONGELAMENTO PARCIAL) ---
+print("\n--- Fase 2: Ajuste Fino (Fine Tuning) ---")
+# Descongela a base
+base_model.trainable = True
+
+# Vamos treinar apenas as últimas 50 camadas da MobileNet (ela tem 155 camadas)
+# Isso permite que ela aprenda as texturas específicas da FERRUGEM
+fine_tune_at = 100
+
+for layer in base_model.layers[:fine_tune_at]:
+    layer.trainable = False
+
+# Compila com taxa de aprendizado MUITO BAIXA para não estragar o modelo
+model.compile(optimizer=Adam(learning_rate=1e-5), # 0.00001
+              loss='categorical_crossentropy',
+              metrics=['accuracy'])
+
+history_fine = model.fit(
+    train_generator,
+    epochs=EPOCHS_FINETUNING,
+    validation_data=validation_generator
+)
+
+# --- SALVANDO ---
+caminho_modelo = 'modelo_soja.keras'
+model.save(caminho_modelo)
+print(f"\n✅ SUCESSO! Modelo salvo em: {caminho_modelo}")
+
+# Salva o arquivo de labels
+with open("labels.txt", "w") as f:
+    for classe in class_names:
+        f.write(f"{classe}\n")
+print("Arquivo labels.txt atualizado.")

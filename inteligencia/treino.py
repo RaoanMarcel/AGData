@@ -102,5 +102,5 @@ history = model.fit(
 )
 
 # SALVAR
-model.save('modelo_soja.h5')
-print("\n✅ SUCESSO! Modelo novo salvo.")
+model.save('modelo_soja.keras') 
+print("\n✅ SUCESSO! Modelo novo salvo como .keras.")

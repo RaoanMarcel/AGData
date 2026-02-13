@@ -1,7 +1,8 @@
 import tensorflow as tf
 
-print("Carregando o modelo .h5...")
-model = tf.keras.models.load_model('modelo_soja.h5')
+print("Carregando o modelo .keras...")
+
+model = tf.keras.models.load_model('modelo_soja.keras')
 
 converter = tf.lite.TFLiteConverter.from_keras_model(model)
 

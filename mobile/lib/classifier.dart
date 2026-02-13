@@ -36,13 +36,7 @@ class Classifier {
 
     if (originalImage == null) return [];
 
-    // 2. Redimensionar para 224x224 (Padrão do Teachable Machine)
     img.Image resizedImage = img.copyResize(originalImage, width: 224, height: 224);
-
-    // 3. Converter a imagem para uma matriz de números (Float32)
-    // O Teachable Machine geralmente exporta como Float32 [1, 224, 224, 3]
-    // Precisamos normalizar os pixels de 0 a 255 para 0.0 a 1.0 (ou manter 0-255 dependendo do modelo)
-    // OBS: Modelos padrão do Teachable Machine (sem quantização) usam Float32 normalizado (0 a 1).
     
     var input = [
       List.generate(224, (y) {
@@ -53,9 +47,7 @@ class Classifier {
           var g = pixel.g;
           var b = pixel.b;
           
-          // Normalização padrão (x / 255.0) para modelos Float
-          return [r / 255.0, g / 255.0, b / 255.0]; 
-        });
+        return [pixel.r.toDouble(), pixel.g.toDouble(), pixel.b.toDouble()];        });
       })
     ];
 

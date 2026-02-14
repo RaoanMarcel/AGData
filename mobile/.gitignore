@@ -43,3 +43,8 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+
+/inteligencia/dataset/
+/inteligencia/modelo_soja.h5
+/inteligencia/modelo_soja.keras

@@ -89,15 +89,12 @@ print("\n--- Fase 2: Ajuste Fino (Fine Tuning) ---")
 # Descongela a base
 base_model.trainable = True
 
-# Vamos treinar apenas as últimas 50 camadas da MobileNet (ela tem 155 camadas)
-# Isso permite que ela aprenda as texturas específicas da FERRUGEM
 fine_tune_at = 100
 
 for layer in base_model.layers[:fine_tune_at]:
     layer.trainable = False
 
-# Compila com taxa de aprendizado MUITO BAIXA para não estragar o modelo
-model.compile(optimizer=Adam(learning_rate=1e-5), # 0.00001
+model.compile(optimizer=Adam(learning_rate=1e-5),
               loss='categorical_crossentropy',
               metrics=['accuracy'])
 
@@ -107,12 +104,10 @@ history_fine = model.fit(
     validation_data=validation_generator
 )
 
-# --- SALVANDO ---
 caminho_modelo = 'modelo_soja.keras'
 model.save(caminho_modelo)
 print(f"\n✅ SUCESSO! Modelo salvo em: {caminho_modelo}")
 
-# Salva o arquivo de labels
 with open("labels.txt", "w") as f:
     for classe in class_names:
         f.write(f"{classe}\n")

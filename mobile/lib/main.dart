@@ -4,7 +4,7 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart'; 
 import 'package:workmanager/workmanager.dart'; // Adicionado
 import 'firebase_options.dart';
-import 'features/diagnostico/presentation/pages/selecao_talhao_screen.dart'; 
+import 'features/diagnostico/presentation/pages/home_dashboard_screen.dart';
 import 'features/diagnostico/data/datasources/database_service.dart';
 import 'infra/repositories/sync_repository.dart';
 import 'infra/services/connectivity_service.dart';
@@ -74,7 +74,6 @@ void main() async {
       try {
         await Workmanager().initialize(
           callbackDispatcher,
-          isInDebugMode: true,
         );
         
         await Workmanager().registerPeriodicTask(
@@ -123,7 +122,7 @@ class AGDataApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'AGdata',
-      home: const SelecaoTalhaoScreen(), 
+      home: const HomeDashboardScreen(),
       theme: AppTheme.lightTheme,
     );
   }

@@ -48,7 +48,6 @@ dev_dependencies:
   isar_generator: ^3.1.0+1
   flutter_launcher_icons: ^0.13.1
 
-# 🎨 Configuração de Ícones conforme sua pasta assets/images/
 flutter_launcher_icons:
   android: true
   ios: true
@@ -56,7 +55,7 @@ flutter_launcher_icons:
   adaptive_icon_background: "assets/images/background.png"
   adaptive_icon_foreground: "assets/images/logo.png"
 
-# 🌊 Configuração de Splash Screen conforme sua pasta assets/images/
+
 flutter_native_splash:
   color: "#ffffff"
   image: assets/images/logo.png

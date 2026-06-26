@@ -83,6 +83,36 @@ class ClimaService {
       previsao: previsao,
     );
   }
+
+  /// Geocodificação reversa (BigDataCloud, gratuita e sem chave).
+  /// Retorna "Cidade, UF" — ou null se indisponível (best-effort).
+  Future<String?> buscarCidade(double lat, double lon) async {
+    try {
+      final uri = Uri.parse(
+        'https://api.bigdatacloud.net/data/reverse-geocode-client'
+        '?latitude=$lat&longitude=$lon&localityLanguage=pt',
+      );
+      final resp = await http.get(uri).timeout(const Duration(seconds: 10));
+      if (resp.statusCode != 200) return null;
+
+      final json = jsonDecode(resp.body) as Map<String, dynamic>;
+      final cidade = (json['city'] as String?)?.trim();
+      final local = (json['locality'] as String?)?.trim();
+      final nome = (cidade != null && cidade.isNotEmpty)
+          ? cidade
+          : (local != null && local.isNotEmpty ? local : null);
+      if (nome == null) return null;
+
+      // principalSubdivisionCode vem como "BR-PR" → UF "PR".
+      final codigoUf = (json['principalSubdivisionCode'] as String?)?.trim();
+      if (codigoUf != null && codigoUf.contains('-')) {
+        return '$nome, ${codigoUf.split('-').last}';
+      }
+      return nome;
+    } catch (_) {
+      return null;
+    }
+  }
 }
 
 /// Mapeia o código WMO em descrição (PT) e ícone.

@@ -19,6 +19,7 @@ class _ClimaCardState extends State<ClimaCard> {
   bool _carregando = true;
   String? _erro;
   ClimaAtual? _clima;
+  String? _cidade;
 
   @override
   void initState() {
@@ -39,9 +40,11 @@ class _ClimaCardState extends State<ClimaCard> {
         return;
       }
       final clima = await _service.buscar(pos.latitude, pos.longitude);
+      final cidade = await _service.buscarCidade(pos.latitude, pos.longitude);
       if (!mounted) return;
       setState(() {
         _clima = clima;
+        _cidade = cidade;
         _carregando = false;
       });
     } catch (_) {
@@ -70,9 +73,30 @@ class _ClimaCardState extends State<ClimaCard> {
                 const Icon(Icons.wb_cloudy_outlined,
                     color: AppColors.info, size: 20),
                 const SizedBox(width: AppSpacing.sm),
-                Text('Clima agora',
-                    style: Theme.of(context).textTheme.titleMedium),
-                const Spacer(),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Clima agora',
+                          style: Theme.of(context).textTheme.titleMedium),
+                      if (_cidade != null)
+                        Row(
+                          children: [
+                            const Icon(Icons.location_on_outlined,
+                                size: 14, color: AppColors.textTertiary),
+                            const SizedBox(width: 2),
+                            Flexible(
+                              child: Text(
+                                _cidade!,
+                                style: Theme.of(context).textTheme.bodySmall,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                    ],
+                  ),
+                ),
                 _carregando
                     ? const SizedBox(
                         width: 20,

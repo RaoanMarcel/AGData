@@ -12,7 +12,10 @@ import '../../data/datasources/database_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class HistoricoScreen extends StatefulWidget {
-  const HistoricoScreen({super.key});
+  /// Quando informado, restringe o histórico às leituras desse talhão.
+  final String? talhaoInicial;
+
+  const HistoricoScreen({super.key, this.talhaoInicial});
 
   @override
   State<HistoricoScreen> createState() => _HistoricoScreenState();
@@ -47,7 +50,11 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
   }
 
   Future<void> _carregarDados() async {
-    final dados = await _databaseService.buscarTodasLeituras();
+    var dados = await _databaseService.buscarTodasLeituras();
+    // Restringe ao talhão de origem, quando aberto a partir da câmera.
+    if (widget.talhaoInicial != null) {
+      dados = dados.where((l) => l.talhao == widget.talhaoInicial).toList();
+    }
     if (mounted) {
       setState(() {
         _todasLeituras = dados.reversed.toList();
@@ -257,7 +264,9 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Relatórios de campo'),
+        title: Text(widget.talhaoInicial == null
+            ? 'Relatórios de campo'
+            : 'Relatórios · ${widget.talhaoInicial}'),
         actions: [
           IconButton(
             icon: const Icon(Icons.filter_list),

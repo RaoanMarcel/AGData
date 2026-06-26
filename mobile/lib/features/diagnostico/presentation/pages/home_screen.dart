@@ -48,7 +48,8 @@ class _HomeScreenState extends State<HomeScreen> {
             onPressed: () => Navigator.push(
                 context,
                 MaterialPageRoute(
-                    builder: (context) => const HistoricoScreen())),
+                    builder: (context) =>
+                        HistoricoScreen(talhaoInicial: widget.talhaoAtual))),
           ),
         ],
       ),

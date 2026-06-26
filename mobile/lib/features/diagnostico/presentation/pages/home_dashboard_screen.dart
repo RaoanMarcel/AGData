@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_dimens.dart';
+import '../../../clima/presentation/clima_card.dart';
 import '../widgets/sync_status_button.dart';
 import 'selecao_talhao_screen.dart';
 import 'historico_screen.dart';
@@ -29,6 +30,8 @@ class HomeDashboardScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  const ClimaCard(),
+                  const SizedBox(height: AppSpacing.xl),
                   _MapControlCard(onTap: () => _ir(context, const MapaScreen())),
                   const SizedBox(height: AppSpacing.xl),
                   Text('Ações rápidas',

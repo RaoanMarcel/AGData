@@ -9,6 +9,7 @@ import '../../../../core/widgets/empty_state.dart';
 import '../../../../core/widgets/section_header.dart';
 import '../../data/models/leitura_model.dart';
 import '../../data/datasources/database_service.dart';
+import 'leitura_detalhe_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class HistoricoScreen extends StatefulWidget {
@@ -208,6 +209,17 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
         });
   }
 
+  /// Abre o detalhe da leitura e recarrega a lista ao voltar (após editar/excluir).
+  Future<void> _abrirDetalhe(LeituraModel leitura) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+          builder: (_) => LeituraDetalheScreen(leitura: leitura)),
+    );
+    await _carregarDados();
+    if (mounted) _aplicarFiltros();
+  }
+
   void _alternarSelecao(int id) {
     setState(() {
       if (_selecionados.contains(id)) {
@@ -303,6 +315,7 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
                       leituras: leituras,
                       selecionados: _selecionados,
                       onToggle: _alternarSelecao,
+                      onAbrir: _abrirDetalhe,
                     );
                   },
                 ),
@@ -316,12 +329,14 @@ class _TalhaoGrupo extends StatelessWidget {
   final List<LeituraModel> leituras;
   final List<int> selecionados;
   final ValueChanged<int> onToggle;
+  final ValueChanged<LeituraModel> onAbrir;
 
   const _TalhaoGrupo({
     required this.nome,
     required this.leituras,
     required this.selecionados,
     required this.onToggle,
+    required this.onAbrir,
   });
 
   @override
@@ -362,7 +377,8 @@ class _TalhaoGrupo extends StatelessWidget {
                   leitura: leitura,
                   selecionado: selecionados.contains(leitura.id),
                   data: formatarDataHora(leitura.dataHora),
-                  onTap: () => onToggle(leitura.id),
+                  onAbrir: () => onAbrir(leitura),
+                  onToggle: () => onToggle(leitura.id),
                 ),
               ),
           ],
@@ -377,13 +393,15 @@ class _LeituraCard extends StatelessWidget {
   final LeituraModel leitura;
   final bool selecionado;
   final String data;
-  final VoidCallback onTap;
+  final VoidCallback onAbrir;
+  final VoidCallback onToggle;
 
   const _LeituraCard({
     required this.leitura,
     required this.selecionado,
     required this.data,
-    required this.onTap,
+    required this.onAbrir,
+    required this.onToggle,
   });
 
   @override
@@ -401,7 +419,7 @@ class _LeituraCard extends StatelessWidget {
         type: MaterialType.transparency,
         child: InkWell(
           borderRadius: BorderRadius.circular(AppRadius.md),
-          onTap: onTap,
+          onTap: onAbrir,
           child: Padding(
             padding: const EdgeInsets.all(AppSpacing.sm),
             child: Row(
@@ -445,7 +463,7 @@ class _LeituraCard extends StatelessWidget {
                 ),
                 Checkbox(
                   value: selecionado,
-                  onChanged: (_) => onTap(),
+                  onChanged: (_) => onToggle(),
                 )
               ],
             ),

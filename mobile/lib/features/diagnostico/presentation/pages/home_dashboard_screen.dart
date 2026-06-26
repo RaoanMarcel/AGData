@@ -74,8 +74,6 @@ class _TopBar extends StatelessWidget {
           end: Alignment.bottomRight,
           colors: [AppColors.primary, AppColors.primaryDark],
         ),
-        borderRadius:
-            BorderRadius.vertical(bottom: Radius.circular(AppRadius.xl)),
       ),
       child: Row(
         children: [
@@ -151,39 +149,20 @@ class _MapControlCard extends StatelessWidget {
                     color: Colors.white.withValues(alpha: 0.10),
                   ),
                 ),
-                // Botão central com ícone de mapa + rótulos.
+                // Botão central com ícone de mapa.
                 Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        height: 64,
-                        width: 64,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.22),
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.55),
-                              width: 1.5),
-                        ),
-                        child: const Icon(Icons.map_outlined,
-                            color: Colors.white, size: 32),
-                      ),
-                      const SizedBox(height: AppSpacing.md),
-                      Text('Central do Mapa',
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleLarge
-                              ?.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w800)),
-                      const SizedBox(height: 2),
-                      Text('Visão geral dos focos no campo',
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodyMedium
-                              ?.copyWith(color: Colors.white70)),
-                    ],
+                  child: Container(
+                    height: 72,
+                    width: 72,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.22),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.55),
+                          width: 1.5),
+                    ),
+                    child: const Icon(Icons.map_outlined,
+                        color: Colors.white, size: 38),
                   ),
                 ),
               ],

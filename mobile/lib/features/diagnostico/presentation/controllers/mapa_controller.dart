@@ -85,7 +85,7 @@ class MapaController extends ChangeNotifier {
         borderColor: v.color,
         borderStrokeWidth: 2,
         useRadiusInMeter: true,
-        radius: 50,
+        radius: 35,
       ));
 
       markers.add(Marker(

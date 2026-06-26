@@ -234,6 +234,9 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
       sb.writeln("*Foco ${i + 1} - ${item.resultadoIA}*");
       sb.writeln("Talhão: ${item.talhao}");
       sb.writeln("Precisão: ${(item.confianca * 100).toStringAsFixed(1)}%");
+      if (item.observacao.trim().isNotEmpty) {
+        sb.writeln("Obs.: ${item.observacao.trim()}");
+      }
       final linkMapa =
           "https://www.google.com/maps/search/?api=1&query=${item.latitude},${item.longitude}";
       sb.writeln("📍 Localização: $linkMapa\n");
@@ -418,6 +421,25 @@ class _LeituraCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(data, style: Theme.of(context).textTheme.bodySmall),
+                      if (leitura.observacao.trim().isNotEmpty) ...[
+                        const SizedBox(height: AppSpacing.xs),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(Icons.notes,
+                                size: 14, color: AppColors.textTertiary),
+                            const SizedBox(width: AppSpacing.xs),
+                            Expanded(
+                              child: Text(
+                                leitura.observacao,
+                                style: Theme.of(context).textTheme.bodySmall,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ],
                   ),
                 ),

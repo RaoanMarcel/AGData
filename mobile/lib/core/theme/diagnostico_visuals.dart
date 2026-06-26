@@ -24,6 +24,21 @@ class DiagnosticoVisual {
   /// `onColor` para texto/ícone sobre [color] — sempre branco (cores são fortes).
   Color get onColor => Colors.white;
 
+  /// Diagnósticos reconhecidos pela IA (exclui mensagens de estado/erro).
+  static const Set<String> conhecidos = {
+    'SAUDÁVEL',
+    'SAUDAVEL',
+    'FERRUGEM',
+    'OÍDIO',
+    'OIDIO',
+    'MANCHA ALVO',
+    'INCONCLUSIVO',
+  };
+
+  /// True se [resultado] é um diagnóstico real (e não um texto de estado/erro).
+  static bool isConhecido(String resultado) =>
+      conhecidos.contains(resultado.toUpperCase().trim());
+
   static DiagnosticoVisual fromResultado(String resultado) {
     switch (resultado.toUpperCase().trim()) {
       case 'SAUDÁVEL':

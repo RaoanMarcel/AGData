@@ -1,5 +1,12 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_dimens.dart';
+import '../../../../core/theme/diagnostico_visuals.dart';
+import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/diagnostico_badge.dart';
+import '../../../../core/widgets/info_pill.dart';
 import '../controllers/home_controller.dart';
 import 'historico_screen.dart';
 import 'mapa_screen.dart';
@@ -15,7 +22,6 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final HomeController _controller = HomeController();
 
-  // ADICIONADO: initState para pedir permissões ao abrir a tela
   @override
   void initState() {
     super.initState();
@@ -24,97 +30,243 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  Color _pegarCorResultado(String resultado) {
-    switch (resultado.toUpperCase()) {
-      case "SAUDÁVEL": return Colors.green;
-      case "FERRUGEM": return Colors.red;
-      case "OÍDIO": return Colors.orange[700]!;
-      case "INCONCLUSIVO": return Colors.yellow[800]!;
-      case "MANCHA ALVO": return Colors.brown[700]!;
-      default: return Colors.grey[700]!;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.talhaoAtual, style: const TextStyle(color: Colors.white)),
-        backgroundColor: const Color(0xFF2E7D32),
-        centerTitle: true,
+        title: Text(widget.talhaoAtual),
         actions: [
           IconButton(
-            icon: const Icon(Icons.map, color: Colors.white),
-            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const MapaScreen())),
+            icon: const Icon(Icons.map_outlined),
+            tooltip: 'Mapa de ocorrências',
+            onPressed: () => Navigator.push(context,
+                MaterialPageRoute(builder: (context) => const MapaScreen())),
           ),
           IconButton(
-            icon: const Icon(Icons.list_alt, color: Colors.white),
-            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const HistoricoScreen())),
-          )
+            icon: const Icon(Icons.history),
+            tooltip: 'Histórico de leituras',
+            onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => const HistoricoScreen())),
+          ),
         ],
       ),
-      body: ListenableBuilder(
-        listenable: _controller,
-        builder: (context, _) {
-          return Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
+      body: SafeArea(
+        child: ListenableBuilder(
+          listenable: _controller,
+          builder: (context, _) {
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(AppSpacing.xl),
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Container(
-                    height: 300, width: 300,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[200],
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: _controller.image != null ? Colors.green : Colors.grey, width: 3),
-                      image: _controller.image != null ? DecorationImage(image: FileImage(_controller.image!), fit: BoxFit.cover) : null,
-                    ),
-                    child: _controller.image == null
-                        ? const Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.add_a_photo, size: 60, color: Colors.grey), SizedBox(height: 10), Text("Pronto para analisar", style: TextStyle(color: Colors.grey))])
-                        : null,
+                  _ImagePreview(image: _controller.image),
+                  const SizedBox(height: AppSpacing.xl),
+                  _ResultArea(controller: _controller),
+                  const SizedBox(height: AppSpacing.xxl),
+                  AppButton(
+                    label: 'Capturar foto',
+                    icon: Icons.camera_alt_outlined,
+                    onPressed: _controller.loading
+                        ? null
+                        : () => _controller.pickAndProcessImage(
+                            ImageSource.camera, widget.talhaoAtual),
                   ),
-                  const SizedBox(height: 30),
-                  _controller.loading
-                      ? const CircularProgressIndicator(color: Colors.green)
-                      : Column(
-                          children: [
-                            Text(_controller.resultado, style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: _pegarCorResultado(_controller.resultado))),
-                            const SizedBox(height: 5),
-                            Text(_controller.confianca, style: const TextStyle(fontSize: 18, color: Colors.grey, fontWeight: FontWeight.w500)),
-                            const SizedBox(height: 10),
-                            if (_controller.localizacaoTexto.isNotEmpty && _controller.localizacaoTexto != "GPS indisponível")
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(color: Colors.blue[50], borderRadius: BorderRadius.circular(8)),
-                                child: Text(_controller.localizacaoTexto, style: TextStyle(fontSize: 14, color: Colors.blue[800], fontWeight: FontWeight.bold)),
-                              ),
-                          ],
-                        ),
-                  const SizedBox(height: 40),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      ElevatedButton.icon(
-                        onPressed: () => _controller.pickAndProcessImage(ImageSource.camera, widget.talhaoAtual),
-                        icon: const Icon(Icons.camera_alt),
-                        label: const Text('Câmera'),
-                        style: ElevatedButton.styleFrom(backgroundColor: Colors.green[700], foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15)),
-                      ),
-                      const SizedBox(width: 20),
-                      ElevatedButton.icon(
-                        onPressed: () => _controller.pickAndProcessImage(ImageSource.gallery, widget.talhaoAtual),
-                        icon: const Icon(Icons.image),
-                        label: const Text('Galeria'),
-                        style: ElevatedButton.styleFrom(backgroundColor: Colors.blue[700], foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15)),
-                      ),
-                    ],
+                  const SizedBox(height: AppSpacing.md),
+                  AppButton(
+                    label: 'Escolher da galeria',
+                    icon: Icons.photo_library_outlined,
+                    variant: AppButtonVariant.secondary,
+                    onPressed: _controller.loading
+                        ? null
+                        : () => _controller.pickAndProcessImage(
+                            ImageSource.gallery, widget.talhaoAtual),
                   ),
                 ],
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+/// Área quadrada de pré-visualização da imagem (ou placeholder de captura).
+class _ImagePreview extends StatelessWidget {
+  final File? image;
+  const _ImagePreview({required this.image});
+
+  @override
+  Widget build(BuildContext context) {
+    final hasImage = image != null;
+    return AspectRatio(
+      aspectRatio: 1,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceVariant,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          border: Border.all(
+            color: hasImage ? AppColors.primary : AppColors.outline,
+            width: 2,
+          ),
+          image: hasImage
+              ? DecorationImage(image: FileImage(image!), fit: BoxFit.cover)
+              : null,
+        ),
+        child: hasImage
+            ? null
+            : Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.add_a_photo_outlined,
+                      size: 64, color: AppColors.textTertiary),
+                  const SizedBox(height: AppSpacing.md),
+                  Text('Pronto para analisar',
+                      style: Theme.of(context).textTheme.bodyMedium),
+                ],
+              ),
+      ),
+    );
+  }
+}
+
+/// Área de resultado: loading, diagnóstico estruturado ou mensagem de estado.
+class _ResultArea extends StatelessWidget {
+  final HomeController controller;
+  const _ResultArea({required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
+    if (controller.loading) {
+      return const _LoadingCard();
+    }
+
+    final temDiagnostico = controller.image != null &&
+        DiagnosticoVisual.isConhecido(controller.resultado);
+
+    if (temDiagnostico) {
+      return _DiagnosticoCard(
+        resultado: controller.resultado,
+        confianca: controller.confianca,
+        localizacao: controller.localizacaoTexto,
+      );
+    }
+
+    // Estado inicial ou de erro (o controller zera a imagem em erros).
+    final isErro = controller.resultado.contains('ERRO') ||
+        controller.resultado.startsWith('SEM ');
+    return _MessageCard(
+      titulo: controller.resultado,
+      subtitulo: controller.confianca,
+      isErro: isErro,
+    );
+  }
+}
+
+class _LoadingCard extends StatelessWidget {
+  const _LoadingCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.xl),
+        child: Column(
+          children: [
+            const CircularProgressIndicator(),
+            const SizedBox(height: AppSpacing.lg),
+            Text('Analisando amostra...',
+                style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: AppSpacing.xs),
+            Text('Processando imagem e localização',
+                style: Theme.of(context).textTheme.bodySmall),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DiagnosticoCard extends StatelessWidget {
+  final String resultado;
+  final String confianca;
+  final String localizacao;
+
+  const _DiagnosticoCard({
+    required this.resultado,
+    required this.confianca,
+    required this.localizacao,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final temGps =
+        localizacao.isNotEmpty && localizacao != 'GPS indisponível';
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          children: [
+            DiagnosticoBadge(resultado: resultado),
+            const SizedBox(height: AppSpacing.md),
+            Text(confianca,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyMedium),
+            if (temGps) ...[
+              const SizedBox(height: AppSpacing.md),
+              InfoPill(
+                icon: Icons.location_on_outlined,
+                text: localizacao,
+                color: AppColors.info,
+                background: AppColors.infoContainer,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MessageCard extends StatelessWidget {
+  final String titulo;
+  final String subtitulo;
+  final bool isErro;
+
+  const _MessageCard({
+    required this.titulo,
+    required this.subtitulo,
+    required this.isErro,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final color = isErro ? AppColors.danger : AppColors.textSecondary;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+      child: Column(
+        children: [
+          if (isErro) ...[
+            const Icon(Icons.error_outline,
+                color: AppColors.danger, size: 32),
+            const SizedBox(height: AppSpacing.sm),
+          ],
+          Text(
+            titulo,
+            textAlign: TextAlign.center,
+            style: textTheme.titleLarge?.copyWith(color: color),
+          ),
+          if (subtitulo.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.xs),
+            Text(subtitulo,
+                textAlign: TextAlign.center, style: textTheme.bodyMedium),
+          ],
+        ],
       ),
     );
   }

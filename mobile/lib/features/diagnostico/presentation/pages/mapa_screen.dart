@@ -194,14 +194,16 @@ class _MapaScreenState extends State<MapaScreen> {
                     mapController: _mapController,
                     options: MapOptions(
                       initialCenter: _controller.centroMapa,
-                      initialZoom: 16.0,
-                      onMapReady: _reenquadrar,
+                      // ~100-150 m de visão ao abrir (nível de talhão).
+                      initialZoom: 19.0,
                     ),
                     children: [
                       TileLayer(
                         urlTemplate:
                             'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                         userAgentPackageName: 'com.agdata.app',
+                        // OSM serve tiles até z19; acima disso, faz upscale.
+                        maxNativeZoom: 19,
                         tileProvider: CachedTileProvider(
                           store: HiveCacheStore(
                             cachePath,

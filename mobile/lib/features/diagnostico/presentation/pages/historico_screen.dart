@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_dimens.dart';
+import '../../../../core/utils/formatters.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/diagnostico_badge.dart';
 import '../../../../core/widgets/empty_state.dart';
@@ -80,6 +81,16 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
     });
   }
 
+  /// Agrupa as leituras filtradas por talhão, preservando a ordem (mais recente).
+  Map<String, List<LeituraModel>> _agruparPorTalhao() {
+    final grupos = <String, List<LeituraModel>>{};
+    for (final l in _leiturasFiltradas) {
+      final chave = l.talhao.trim().isEmpty ? 'Sem talhão' : l.talhao;
+      grupos.putIfAbsent(chave, () => []).add(l);
+    }
+    return grupos;
+  }
+
   // --- MENU INFERIOR DE FILTROS ---
   void _abrirMenuDeFiltros() {
     showModalBottomSheet(
@@ -112,7 +123,7 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
                     title: Text(
                       _dataFiltro == null
                           ? "Todas as datas"
-                          : "Dia: ${_dataFiltro!.day.toString().padLeft(2, '0')}/${_dataFiltro!.month.toString().padLeft(2, '0')}/${_dataFiltro!.year}",
+                          : "Dia: ${formatarData(_dataFiltro!)}",
                       style: TextStyle(
                           color: _dataFiltro == null
                               ? AppColors.textTertiary
@@ -190,11 +201,6 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
         });
   }
 
-  // --- FUNÇÕES DE APOIO ---
-  String _formatarData(DateTime data) {
-    return "${data.day.toString().padLeft(2, '0')}/${data.month.toString().padLeft(2, '0')}/${data.year} às ${data.hour.toString().padLeft(2, '0')}:${data.minute.toString().padLeft(2, '0')}";
-  }
-
   void _alternarSelecao(int id) {
     setState(() {
       if (_selecionados.contains(id)) {
@@ -212,12 +218,14 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
 
     StringBuffer sb = StringBuffer();
     sb.writeln("📊 *Relatório AGdata - Inspeção de Campo*");
-    sb.writeln("📅 *Data do Envio:* ${_formatarData(DateTime.now())}\n");
-    sb.writeln("⚠️ *Atenção:* ${itensMarcados.length} registro(s) selecionado(s).\n");
+    sb.writeln("📅 *Data do Envio:* ${formatarDataHora(DateTime.now())}\n");
+    sb.writeln(
+        "⚠️ *Atenção:* ${itensMarcados.length} registro(s) selecionado(s).\n");
 
     for (int i = 0; i < itensMarcados.length; i++) {
       final item = itensMarcados[i];
       sb.writeln("*Foco ${i + 1} - ${item.resultadoIA}*");
+      sb.writeln("Talhão: ${item.talhao}");
       sb.writeln("Precisão: ${(item.confianca * 100).toStringAsFixed(1)}%");
       final linkMapa =
           "https://www.google.com/maps/search/?api=1&query=${item.latitude},${item.longitude}";
@@ -244,6 +252,9 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final grupos = _agruparPorTalhao();
+    final talhoes = grupos.keys.toList();
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Relatórios de campo'),
@@ -269,18 +280,17 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
                   message:
                       'Ajuste os filtros ou realize novas leituras no campo.',
                 )
-              : ListView.separated(
+              : ListView.builder(
                   padding: const EdgeInsets.all(AppSpacing.lg),
-                  itemCount: _leiturasFiltradas.length,
-                  separatorBuilder: (_, __) =>
-                      const SizedBox(height: AppSpacing.md),
+                  itemCount: talhoes.length,
                   itemBuilder: (context, index) {
-                    final leitura = _leiturasFiltradas[index];
-                    return _LeituraCard(
-                      leitura: leitura,
-                      selecionado: _selecionados.contains(leitura.id),
-                      data: _formatarData(leitura.dataHora),
-                      onTap: () => _alternarSelecao(leitura.id),
+                    final nome = talhoes[index];
+                    final leituras = grupos[nome]!;
+                    return _TalhaoGrupo(
+                      nome: nome,
+                      leituras: leituras,
+                      selecionados: _selecionados,
+                      onToggle: _alternarSelecao,
                     );
                   },
                 ),
@@ -288,7 +298,69 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
   }
 }
 
-/// Cartão de uma leitura no histórico (miniatura + diagnóstico + seleção).
+/// Seção expansível de um talhão, contendo suas leituras.
+class _TalhaoGrupo extends StatelessWidget {
+  final String nome;
+  final List<LeituraModel> leituras;
+  final List<int> selecionados;
+  final ValueChanged<int> onToggle;
+
+  const _TalhaoGrupo({
+    required this.nome,
+    required this.leituras,
+    required this.selecionados,
+    required this.onToggle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final afetadas = leituras
+        .where((l) => l.resultadoIA.toUpperCase().trim() != 'SAUDÁVEL')
+        .length;
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: AppSpacing.md),
+      child: Theme(
+        // Remove as divisórias padrão do ExpansionTile.
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          initiallyExpanded: true,
+          tilePadding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg, vertical: AppSpacing.xs),
+          childrenPadding: const EdgeInsets.fromLTRB(
+              AppSpacing.md, 0, AppSpacing.md, AppSpacing.md),
+          leading: Container(
+            padding: const EdgeInsets.all(AppSpacing.sm),
+            decoration: BoxDecoration(
+              color: AppColors.primaryContainer,
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+            ),
+            child: const Icon(Icons.eco, color: AppColors.primary, size: 20),
+          ),
+          title: Text(nome, style: Theme.of(context).textTheme.titleMedium),
+          subtitle: Text(
+            '${leituras.length} leitura(s) · $afetadas com foco',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          children: [
+            for (final leitura in leituras)
+              Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                child: _LeituraCard(
+                  leitura: leitura,
+                  selecionado: selecionados.contains(leitura.id),
+                  data: formatarDataHora(leitura.dataHora),
+                  onTap: () => onToggle(leitura.id),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Cartão de uma leitura (miniatura + diagnóstico + seleção).
 class _LeituraCard extends StatelessWidget {
   final LeituraModel leitura;
   final bool selecionado;
@@ -304,43 +376,48 @@ class _LeituraCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      color: selecionado ? AppColors.primaryContainer : AppColors.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        side: BorderSide(
+    return Container(
+      decoration: BoxDecoration(
+        color: selecionado ? AppColors.primaryContainer : AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(
           color: selecionado ? AppColors.primary : AppColors.outlineVariant,
           width: selecionado ? 2 : 1,
         ),
       ),
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          child: Row(
-            children: [
-              _Thumb(caminho: leitura.caminhoImagem),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    DiagnosticoBadge(resultado: leitura.resultadoIA, dense: true),
-                    const SizedBox(height: AppSpacing.sm),
-                    Text(
-                      "Confiança: ${(leitura.confianca * 100).toStringAsFixed(1)}%",
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(data, style: Theme.of(context).textTheme.bodySmall),
-                  ],
+      child: Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.sm),
+            child: Row(
+              children: [
+                _Thumb(caminho: leitura.caminhoImagem),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      DiagnosticoBadge(
+                          resultado: leitura.resultadoIA, dense: true),
+                      const SizedBox(height: AppSpacing.sm),
+                      Text(
+                        "Confiança: ${(leitura.confianca * 100).toStringAsFixed(1)}%",
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(data, style: Theme.of(context).textTheme.bodySmall),
+                    ],
+                  ),
                 ),
-              ),
-              Checkbox(
-                value: selecionado,
-                onChanged: (_) => onTap(),
-              )
-            ],
+                Checkbox(
+                  value: selecionado,
+                  onChanged: (_) => onTap(),
+                )
+              ],
+            ),
           ),
         ),
       ),

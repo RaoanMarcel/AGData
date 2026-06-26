@@ -19,6 +19,7 @@ class MapaScreen extends StatefulWidget {
 
 class _MapaScreenState extends State<MapaScreen> {
   final MapaController _controller = MapaController();
+  final MapController _mapController = MapController();
 
   static const List<String> _tiposDoenca = [
     "SAUDÁVEL",
@@ -31,6 +32,22 @@ class _MapaScreenState extends State<MapaScreen> {
   Future<String> _getPath() async {
     final directory = await getApplicationDocumentsDirectory();
     return directory.path;
+  }
+
+  /// Reenquadra a câmera para abranger todas as ocorrências visíveis.
+  void _reenquadrar() {
+    final pts = _controller.pontos;
+    if (pts.isEmpty) return;
+    if (pts.length == 1) {
+      _mapController.move(pts.first, 16);
+    } else {
+      _mapController.fitCamera(
+        CameraFit.bounds(
+          bounds: LatLngBounds.fromPoints(pts),
+          padding: const EdgeInsets.all(60),
+        ),
+      );
+    }
   }
 
   void _abrirFiltros() {
@@ -106,6 +123,7 @@ class _MapaScreenState extends State<MapaScreen> {
                           onPressed: () {
                             _controller.aplicarFiltros();
                             Navigator.pop(context);
+                            _reenquadrar();
                           },
                         ),
                       ),
@@ -120,6 +138,7 @@ class _MapaScreenState extends State<MapaScreen> {
                                 inicio: tempInicio,
                                 fim: tempFim);
                             Navigator.pop(context);
+                            _reenquadrar();
                           },
                         ),
                       ),
@@ -148,6 +167,11 @@ class _MapaScreenState extends State<MapaScreen> {
           ),
         ],
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _reenquadrar,
+        tooltip: 'Centralizar nas ocorrências',
+        child: const Icon(Icons.center_focus_strong),
+      ),
       body: FutureBuilder<String>(
         future: _getPath(),
         builder: (context, snapshot) {
@@ -164,32 +188,145 @@ class _MapaScreenState extends State<MapaScreen> {
                 return const Center(child: CircularProgressIndicator());
               }
 
-              return FlutterMap(
-                options: MapOptions(
-                  initialCenter: _controller.centroMapa,
-                  initialZoom: 16.0,
-                ),
+              return Stack(
                 children: [
-                  TileLayer(
-                    urlTemplate:
-                        'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                    userAgentPackageName: 'com.agdata.app',
-                    tileProvider: CachedTileProvider(
-                      store: HiveCacheStore(
-                        cachePath,
-                        hiveBoxName: 'agdata_tiles',
-                      ),
-                      // Expira o visual do mapa após 30 dias.
-                      maxStale: const Duration(days: 30),
+                  FlutterMap(
+                    mapController: _mapController,
+                    options: MapOptions(
+                      initialCenter: _controller.centroMapa,
+                      initialZoom: 16.0,
+                      onMapReady: _reenquadrar,
                     ),
+                    children: [
+                      TileLayer(
+                        urlTemplate:
+                            'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                        userAgentPackageName: 'com.agdata.app',
+                        tileProvider: CachedTileProvider(
+                          store: HiveCacheStore(
+                            cachePath,
+                            hiveBoxName: 'agdata_tiles',
+                          ),
+                          // Expira o visual do mapa após 30 dias.
+                          maxStale: const Duration(days: 30),
+                        ),
+                      ),
+                      CircleLayer(circles: _controller.circles),
+                      MarkerLayer(markers: _controller.markers),
+                    ],
                   ),
-                  CircleLayer(circles: _controller.circles),
-                  MarkerLayer(markers: _controller.markers),
+                  _ContextoChip(
+                    talhao: _controller.filtroTalhao,
+                    total: _controller.totalVisiveis,
+                  ),
+                  if (_controller.contagemDoenca.isNotEmpty)
+                    _Legenda(contagem: _controller.contagemDoenca),
                 ],
               );
             },
           );
         },
+      ),
+    );
+  }
+}
+
+/// Chip no topo informando o talhão exibido e o total de ocorrências.
+class _ContextoChip extends StatelessWidget {
+  final String? talhao;
+  final int total;
+  const _ContextoChip({required this.talhao, required this.total});
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned(
+      top: AppSpacing.md,
+      left: AppSpacing.md,
+      right: AppSpacing.md,
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(AppRadius.pill),
+            boxShadow: const [
+              BoxShadow(
+                  color: Color(0x1A000000), blurRadius: 8, offset: Offset(0, 2))
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.eco, size: 16, color: AppColors.primary),
+              const SizedBox(width: AppSpacing.xs),
+              Text(
+                '${talhao ?? 'Todos os talhões'} · $total ocorrência(s)',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Legenda das cores de diagnóstico presentes no mapa, com contagem.
+class _Legenda extends StatelessWidget {
+  final Map<String, int> contagem;
+  const _Legenda({required this.contagem});
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned(
+      left: AppSpacing.md,
+      bottom: AppSpacing.md,
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          boxShadow: const [
+            BoxShadow(
+                color: Color(0x1A000000), blurRadius: 8, offset: Offset(0, 2))
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Legenda',
+                style: Theme.of(context)
+                    .textTheme
+                    .bodySmall
+                    ?.copyWith(fontWeight: FontWeight.w700)),
+            const SizedBox(height: AppSpacing.xs),
+            ...contagem.entries.map((e) {
+              final v = DiagnosticoVisual.fromResultado(e.key);
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 12,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: v.color,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Text('${e.key} (${e.value})',
+                        style: Theme.of(context).textTheme.bodySmall),
+                  ],
+                ),
+              );
+            }),
+          ],
+        ),
       ),
     );
   }

@@ -84,14 +84,14 @@ class MapaController extends ChangeNotifier {
         color: v.color.withValues(alpha: 0.25),
         borderColor: v.color,
         borderStrokeWidth: 2,
-        useRadiusInMeter: true,
-        radius: 35,
+        // Raio fixo em pixels — não escala com o zoom.
+        radius: 14,
       ));
 
       markers.add(Marker(
         point: pos,
-        width: 44,
-        height: 44,
+        width: 38,
+        height: 38,
         alignment: Alignment.topCenter,
         child: _PinMapa(color: v.color, icon: v.icon),
       ));
@@ -117,9 +117,9 @@ class _PinMapa extends StatelessWidget {
     return Stack(
       alignment: Alignment.topCenter,
       children: [
-        const Icon(Icons.location_on, size: 44, color: Colors.white),
-        Icon(Icons.location_on, size: 38, color: color),
-        Positioned(top: 7, child: Icon(icon, size: 13, color: Colors.white)),
+        const Icon(Icons.location_on, size: 38, color: Colors.white),
+        Icon(Icons.location_on, size: 32, color: color),
+        Positioned(top: 6, child: Icon(icon, size: 11, color: Colors.white)),
       ],
     );
   }

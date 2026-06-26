@@ -129,13 +129,13 @@ class _MapControlCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadius.lg),
         onTap: onTap,
         child: SizedBox(
-          height: 200,
+          height: 190,
           child: ClipRRect(
             borderRadius: BorderRadius.circular(AppRadius.lg),
             child: Stack(
               fit: StackFit.expand,
               children: [
-                // Fundo "mapa" (gradiente verde).
+                // Fundo verde.
                 const DecoratedBox(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
@@ -145,88 +145,44 @@ class _MapControlCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                // Marca d'água de mapa.
-                Positioned(
-                  right: -30,
-                  top: -20,
-                  child: Icon(Icons.map,
-                      size: 200, color: Colors.white.withValues(alpha: 0.08)),
-                ),
-                // Pinos simbolizando focos.
-                const _MiniPin(top: 36, left: 50, color: AppColors.ferrugem),
-                const _MiniPin(top: 92, left: 150, color: AppColors.oidio),
-                const _MiniPin(top: 54, right: 90, color: AppColors.saudavel),
-                const _MiniPin(
-                    bottom: 70, left: 110, color: AppColors.manchaAlvo),
-                // Sombra inferior para legibilidade do texto.
-                const Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  height: 96,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [Colors.transparent, Color(0xCC0C3711)],
-                      ),
-                    ),
+                // Malha simbolizando um mapa.
+                CustomPaint(
+                  painter: _MalhaMapaPainter(
+                    color: Colors.white.withValues(alpha: 0.10),
                   ),
                 ),
-                // Conteúdo.
-                Padding(
-                  padding: const EdgeInsets.all(AppSpacing.lg),
+                // Botão central com ícone de mapa + rótulos.
+                Center(
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.sm, vertical: 4),
+                        height: 64,
+                        width: 64,
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(AppRadius.pill),
+                          color: Colors.white.withValues(alpha: 0.22),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.55),
+                              width: 1.5),
                         ),
-                        child: const Text('MAPA',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 1)),
+                        child: const Icon(Icons.map_outlined,
+                            color: Colors.white, size: 32),
                       ),
-                      const Spacer(),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('Central do Mapa',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .titleLarge
-                                        ?.copyWith(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.w800)),
-                                Text('Visão geral dos focos no campo',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodyMedium
-                                        ?.copyWith(color: Colors.white70)),
-                              ],
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.all(AppSpacing.sm),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.22),
-                              borderRadius: BorderRadius.circular(AppRadius.md),
-                            ),
-                            child: const Icon(Icons.arrow_forward,
-                                color: Colors.white),
-                          ),
-                        ],
-                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      Text('Central do Mapa',
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleLarge
+                              ?.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w800)),
+                      const SizedBox(height: 2),
+                      Text('Visão geral dos focos no campo',
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodyMedium
+                              ?.copyWith(color: Colors.white70)),
                     ],
                   ),
                 ),
@@ -239,38 +195,28 @@ class _MapControlCard extends StatelessWidget {
   }
 }
 
-/// Pino decorativo (gota colorida com contorno branco) para o card do mapa.
-class _MiniPin extends StatelessWidget {
-  final double? top;
-  final double? left;
-  final double? right;
-  final double? bottom;
+/// Desenha uma malha (grade) leve para simbolizar um mapa.
+class _MalhaMapaPainter extends CustomPainter {
   final Color color;
-
-  const _MiniPin({
-    this.top,
-    this.left,
-    this.right,
-    this.bottom,
-    required this.color,
-  });
+  const _MalhaMapaPainter({required this.color});
 
   @override
-  Widget build(BuildContext context) {
-    return Positioned(
-      top: top,
-      left: left,
-      right: right,
-      bottom: bottom,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          const Icon(Icons.location_on, size: 30, color: Colors.white),
-          Icon(Icons.location_on, size: 24, color: color),
-        ],
-      ),
-    );
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 1;
+    const passo = 30.0;
+    for (double x = 0; x <= size.width; x += passo) {
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
+    }
+    for (double y = 0; y <= size.height; y += passo) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
+    }
   }
+
+  @override
+  bool shouldRepaint(_MalhaMapaPainter oldDelegate) =>
+      oldDelegate.color != color;
 }
 
 /// Item de ação em formato de lista (ícone + título + subtítulo + seta).

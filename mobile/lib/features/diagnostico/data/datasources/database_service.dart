@@ -2,6 +2,7 @@ import 'package:isar/isar.dart';
 import 'package:path_provider/path_provider.dart';
 import '../models/leitura_model.dart';
 import '../models/talhao_model.dart';
+import '../../../auth/data/models/auth_model.dart';
 
 class DatabaseService {
   static late Isar isar;
@@ -11,7 +12,8 @@ class DatabaseService {
     isar = await Isar.open(
       [
         LeituraModelSchema, 
-        TalhaoModelSchema 
+        TalhaoModelSchema,
+        UserModelSchema
       ],
       directory: dir.path,
     );
@@ -40,7 +42,7 @@ class DatabaseService {
   Future<List<TalhaoModel>> buscarTalhoesPorEmpresa(String companyId) async {
     return await isar.talhaoModels
         .filter()
-        .companyIdEqualTo(companyId) // Filtro do Isar
+        .companyIdEqualTo(companyId)
         .sortByNome()
         .findAll();
   }

@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
-import '../controllers/selecao_talhao_controller.dart'; 
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_dimens.dart';
+import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/empty_state.dart';
+import '../controllers/selecao_talhao_controller.dart';
 import 'home_screen.dart';
 import '/../infra/repositories/sync_repository.dart';
 import '/../infra/services/connectivity_service.dart';
@@ -19,66 +23,56 @@ class _SelecaoTalhaoScreenState extends State<SelecaoTalhaoScreen> {
 
   Future<void> _handleManualSync() async {
     setState(() => _isSyncing = true);
-    
+
     final isStable = await _connectivity.triplePingCheck();
-    
+
     if (isStable) {
       try {
         await _syncRepo.sincronizarLeituras();
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Dados sincronizados com a nuvem!'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        }
+        _mostrarSnack('Dados sincronizados com a nuvem!', AppColors.syncSuccess);
       } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Erro na sincronização: $e'), backgroundColor: Colors.red),
-          );
-        }
+        _mostrarSnack('Erro na sincronização: $e', AppColors.syncError);
       }
     } else {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Conexão instável ou inexistente. Tente mais tarde.'),
-            backgroundColor: Colors.orange,
-          ),
-        );
-      }
+      _mostrarSnack(
+          'Conexão instável ou inexistente. Tente mais tarde.',
+          AppColors.syncPending);
     }
-    
-    setState(() => _isSyncing = false);
+
+    if (mounted) setState(() => _isSyncing = false);
+  }
+
+  void _mostrarSnack(String mensagem, Color cor) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(mensagem), backgroundColor: cor),
+    );
   }
 
   Future<void> _mostrarDialogoNovoTalhao() async {
-    TextEditingController textController = TextEditingController();
+    final textController = TextEditingController();
 
     await showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Cadastrar Novo Talhão', style: TextStyle(color: Colors.green)),
+          title: const Text('Cadastrar novo talhão'),
           content: TextField(
             controller: textController,
+            autofocus: true,
             decoration: const InputDecoration(
               hintText: 'Ex: Lote Sul, Gleba 03...',
-              border: OutlineInputBorder(),
             ),
             textCapitalization: TextCapitalization.words,
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
+              child: const Text('Cancelar'),
             ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
               onPressed: () async {
-                String nome = textController.text.trim();
+                final nome = textController.text.trim();
                 if (nome.isNotEmpty) {
                   await _controller.salvarTalhao(nome);
                   if (context.mounted) Navigator.pop(context);
@@ -96,111 +90,144 @@ class _SelecaoTalhaoScreenState extends State<SelecaoTalhaoScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('AGdata - Áreas', style: TextStyle(color: Colors.white)),
-        backgroundColor: const Color(0xFF2E7D32),
-        centerTitle: true,
+        title: const Text('Selecionar área'),
         actions: [
-          _isSyncing 
-            ? const Padding(
-                padding: EdgeInsets.all(12.0),
-                child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)),
-              )
-            : IconButton(
-                icon: const Icon(Icons.cloud_upload, color: Colors.white),
-                onPressed: _handleManualSync,
-                tooltip: 'Sincronizar com Nuvem',
-              ),
+          _isSyncing
+              ? const Padding(
+                  padding: EdgeInsets.all(14),
+                  child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                        color: Colors.white, strokeWidth: 2),
+                  ),
+                )
+              : IconButton(
+                  icon: const Icon(Icons.cloud_upload_outlined),
+                  onPressed: _handleManualSync,
+                  tooltip: 'Sincronizar com a nuvem',
+                ),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _mostrarDialogoNovoTalhao,
-        backgroundColor: Colors.green[700],
-        foregroundColor: Colors.white,
         icon: const Icon(Icons.add),
-        label: const Text('Novo Talhão'),
+        label: const Text('Novo talhão'),
       ),
       body: ListenableBuilder(
         listenable: _controller,
         builder: (context, _) {
           if (_controller.loading) {
-            return const Center(child: CircularProgressIndicator(color: Colors.green));
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (_controller.talhoes.isEmpty) {
+            return EmptyState(
+              icon: Icons.agriculture_outlined,
+              title: 'Nenhum talhão cadastrado',
+              message: 'Crie a primeira área para iniciar o monitoramento.',
+              action: AppButton(
+                label: 'Cadastrar talhão',
+                icon: Icons.add,
+                expand: false,
+                onPressed: _mostrarDialogoNovoTalhao,
+              ),
+            );
           }
 
           return Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.all(AppSpacing.lg),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Text(
+                Text(
                   'Onde você vai realizar o monitoramento?',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  style: Theme.of(context).textTheme.titleLarge,
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 20),
-                
-                if (_controller.talhoes.isEmpty)
-                  Expanded(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.agriculture, size: 80, color: Colors.grey[400]),
-                        const SizedBox(height: 16),
-                        Text('Nenhum talhão cadastrado.\nCrie o primeiro agora.', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey[600], fontSize: 16)),
-                      ],
-                    ),
-                  )
-                else
-                  Expanded(
-                    child: ListView.builder(
-                      itemCount: _controller.talhoes.length,
-                      itemBuilder: (context, index) {
-                        final talhao = _controller.talhoes[index].nome;
-                        final isSelected = _controller.talhaoSelecionado == talhao;
-
-                        return Card(
-                          color: isSelected ? Colors.green[50] : Colors.white,
-                          elevation: isSelected ? 3 : 1,
-                          shape: RoundedRectangleBorder(
-                            side: BorderSide(color: isSelected ? Colors.green : Colors.transparent, width: 2),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          margin: const EdgeInsets.only(bottom: 12),
-                          child: ListTile(
-                            leading: Icon(Icons.eco, color: isSelected ? Colors.green[800] : Colors.grey),
-                            title: Text(talhao, style: TextStyle(fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
-                            trailing: isSelected ? const Icon(Icons.check_circle, color: Colors.green) : null,
-                            onTap: () => _controller.selecionarTalhao(talhao),
-                          ),
-                        );
-                      },
-                    ),
+                const SizedBox(height: AppSpacing.lg),
+                Expanded(
+                  child: ListView.separated(
+                    itemCount: _controller.talhoes.length,
+                    separatorBuilder: (_, __) =>
+                        const SizedBox(height: AppSpacing.md),
+                    itemBuilder: (context, index) {
+                      final talhao = _controller.talhoes[index].nome;
+                      final isSelected =
+                          _controller.talhaoSelecionado == talhao;
+                      return _TalhaoTile(
+                        nome: talhao,
+                        selecionado: isSelected,
+                        onTap: () => _controller.selecionarTalhao(talhao),
+                      );
+                    },
                   ),
-                
-                const SizedBox(height: 16),
-                ElevatedButton(
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                AppButton(
+                  label: 'Iniciar análises',
+                  icon: Icons.arrow_forward,
                   onPressed: _controller.talhaoSelecionado == null
                       ? null
-                      : () {
-                          Navigator.push(
+                      : () => Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => HomeScreen(talhaoAtual: _controller.talhaoSelecionado!),
+                              builder: (context) => HomeScreen(
+                                  talhaoAtual: _controller.talhaoSelecionado!),
                             ),
-                          );
-                        },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green[700],
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 18),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
-                  child: const Text('Iniciar Análises', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                          ),
                 ),
-                const SizedBox(height: 60),
+                const SizedBox(height: AppSpacing.sm),
               ],
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+/// Cartão de um talhão na lista de seleção.
+class _TalhaoTile extends StatelessWidget {
+  final String nome;
+  final bool selecionado;
+  final VoidCallback onTap;
+
+  const _TalhaoTile({
+    required this.nome,
+    required this.selecionado,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      color: selecionado ? AppColors.primaryContainer : AppColors.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        side: BorderSide(
+          color: selecionado ? AppColors.primary : AppColors.outlineVariant,
+          width: selecionado ? 2 : 1,
+        ),
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg, vertical: AppSpacing.xs),
+        leading: Icon(
+          Icons.eco,
+          color: selecionado ? AppColors.primary : AppColors.textTertiary,
+        ),
+        title: Text(
+          nome,
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight:
+                    selecionado ? FontWeight.w700 : FontWeight.w500,
+              ),
+        ),
+        trailing: selecionado
+            ? const Icon(Icons.check_circle, color: AppColors.primary)
+            : null,
+        onTap: onTap,
       ),
     );
   }

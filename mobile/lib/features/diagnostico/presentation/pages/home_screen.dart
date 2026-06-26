@@ -98,7 +98,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ElevatedButton.icon(
                         onPressed: () => _controller.pickAndProcessImage(ImageSource.camera, widget.talhaoAtual),
                         icon: const Icon(Icons.camera_alt),
-                        label: const Text('Câmara'),
+                        label: const Text('Câmera'),
                         style: ElevatedButton.styleFrom(backgroundColor: Colors.green[700], foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15)),
                       ),
                       const SizedBox(width: 20),

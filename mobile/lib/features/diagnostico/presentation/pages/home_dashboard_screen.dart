@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_dimens.dart';
+import '../widgets/sync_status_button.dart';
 import 'selecao_talhao_screen.dart';
 import 'historico_screen.dart';
 import 'mapa_screen.dart';
@@ -108,6 +109,7 @@ class _TopBar extends StatelessWidget {
               ],
             ),
           ),
+          const SyncStatusButton(),
         ],
       ),
     );

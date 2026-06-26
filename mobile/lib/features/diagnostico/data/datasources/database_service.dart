@@ -35,6 +35,14 @@ class DatabaseService {
     });
   }
 
+  /// Quantidade de leituras ainda não sincronizadas com a nuvem.
+  Future<int> contarLeiturasPendentes() async {
+    return await isar.leituraModels
+        .filter()
+        .sincronizadoEqualTo(false)
+        .count();
+  }
+
   // --- FUNÇÕES PARA TALHÕES (ÁREAS DA FAZENDA) ---
 
   Future<void> guardarTalhao(TalhaoModel talhao) async {

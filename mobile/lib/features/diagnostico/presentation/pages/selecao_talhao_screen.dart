@@ -5,9 +5,8 @@ import '../../../../core/utils/formatters.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/empty_state.dart';
 import '../controllers/selecao_talhao_controller.dart';
+import '../widgets/sync_status_button.dart';
 import 'home_screen.dart';
-import '/../infra/repositories/sync_repository.dart';
-import '/../infra/services/connectivity_service.dart';
 
 class SelecaoTalhaoScreen extends StatefulWidget {
   const SelecaoTalhaoScreen({super.key});
@@ -18,37 +17,6 @@ class SelecaoTalhaoScreen extends StatefulWidget {
 
 class _SelecaoTalhaoScreenState extends State<SelecaoTalhaoScreen> {
   final SelecaoTalhaoController _controller = SelecaoTalhaoController();
-  final SyncRepository _syncRepo = SyncRepository();
-  final ConnectivityService _connectivity = ConnectivityService();
-  bool _isSyncing = false;
-
-  Future<void> _handleManualSync() async {
-    setState(() => _isSyncing = true);
-
-    final isStable = await _connectivity.triplePingCheck();
-
-    if (isStable) {
-      try {
-        await _syncRepo.sincronizarLeituras();
-        _mostrarSnack('Dados sincronizados com a nuvem!', AppColors.syncSuccess);
-      } catch (e) {
-        _mostrarSnack('Erro na sincronização: $e', AppColors.syncError);
-      }
-    } else {
-      _mostrarSnack(
-          'Conexão instável ou inexistente. Tente mais tarde.',
-          AppColors.syncPending);
-    }
-
-    if (mounted) setState(() => _isSyncing = false);
-  }
-
-  void _mostrarSnack(String mensagem, Color cor) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(mensagem), backgroundColor: cor),
-    );
-  }
 
   /// Abre a tela de análise para o talhão e recarrega as estatísticas ao voltar.
   Future<void> _iniciarAnalise(String talhao) async {
@@ -166,23 +134,7 @@ class _SelecaoTalhaoScreenState extends State<SelecaoTalhaoScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Selecionar área'),
-        actions: [
-          _isSyncing
-              ? const Padding(
-                  padding: EdgeInsets.all(14),
-                  child: SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                        color: Colors.white, strokeWidth: 2),
-                  ),
-                )
-              : IconButton(
-                  icon: const Icon(Icons.cloud_upload_outlined),
-                  onPressed: _handleManualSync,
-                  tooltip: 'Sincronizar com a nuvem',
-                ),
-        ],
+        actions: const [SyncStatusButton()],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _abrirFormNovoTalhao,

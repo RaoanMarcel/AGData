@@ -6,6 +6,9 @@ import '../../../auth/data/models/auth_model.dart';
 import '../../../auth/data/repositories/auth_repository.dart';
 import '../../../auth/presentation/pages/super_admin_page.dart';
 import '../../../auth/presentation/pages/admin_page.dart';
+import '../../../diagnostico/presentation/pages/selecao_talhao_screen.dart';
+import '../../../diagnostico/presentation/pages/historico_screen.dart';
+import '../../../diagnostico/presentation/pages/mapa_screen.dart';
 
 class CustomDrawer extends StatelessWidget {
   final VoidCallback? onSync;
@@ -88,6 +91,43 @@ class CustomDrawer extends StatelessWidget {
                 onSync!();
               },
             ),
+
+          // NAVEGAÇÃO PRINCIPAL
+          const Divider(height: 1),
+          const Padding(
+            padding: EdgeInsets.only(left: 16, top: 10, bottom: 4),
+            child: Text(
+              "NAVEGAÇÃO",
+              style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold, fontSize: 12),
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.center_focus_strong_outlined, color: Color(0xFF2E7D32)),
+            title: const Text("Nova Análise"),
+            subtitle: const Text("Selecionar talhão e diagnosticar"),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const SelecaoTalhaoScreen()));
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.history, color: Color(0xFF1565C0)),
+            title: const Text("Histórico"),
+            subtitle: const Text("Leituras e relatórios salvos"),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const HistoricoScreen()));
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.map_outlined, color: Color(0xFF6A1B9A)),
+            title: const Text("Mapa de Ocorrências"),
+            subtitle: const Text("Visualizar focos no campo"),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const MapaScreen()));
+            },
+          ),
 
           // ÁREA DE GESTÃO (FILTRADA POR ROLE)
           if (temAcessoGestao) ...[

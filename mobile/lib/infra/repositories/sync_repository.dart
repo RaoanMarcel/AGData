@@ -85,7 +85,6 @@ class SyncRepository {
       
     } catch (e) {
       debugPrint('❌ [SYNC ERROR] $e');
-      rethrow; 
     } finally {
       _isSyncing = false; 
     }

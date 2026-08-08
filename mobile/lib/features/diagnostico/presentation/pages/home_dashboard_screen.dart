@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import '../../../../core/di/injection_container.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_dimens.dart';
+import '../../../auth/presentation/controller/session_controller.dart';
+import '../../../auth/presentation/widgets/custom_drawer.dart';
 import '../../../clima/presentation/clima_card.dart';
 import '../widgets/sync_status_button.dart';
 import 'selecao_talhao_screen.dart';
@@ -20,7 +23,7 @@ class HomeDashboardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      drawer: const _AppDrawer(),
+      drawer: const CustomDrawer(),
       body: Column(
         children: [
           const _TopBar(),
@@ -69,6 +72,8 @@ class _TopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final topInset = MediaQuery.of(context).padding.top;
+    final nome = sl<SessionController>().usuario?.name.split(' ').first;
+    final subtitulo = nome != null ? 'Olá, $nome!' : 'Diagnóstico fitossanitário da soja';
     return Container(
       padding: EdgeInsets.fromLTRB(
           AppSpacing.sm, topInset + AppSpacing.sm, AppSpacing.lg, AppSpacing.lg),
@@ -105,7 +110,7 @@ class _TopBar extends StatelessWidget {
                           color: Colors.white,
                           fontWeight: FontWeight.w800,
                         )),
-                Text('Diagnóstico fitossanitário da soja',
+                Text(subtitulo,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Colors.white.withValues(alpha: 0.9),
                         )),
@@ -258,132 +263,3 @@ class _ActionTile extends StatelessWidget {
   }
 }
 
-/// Menu lateral — reservado para dados futuros de usuário/empresa.
-class _AppDrawer extends StatelessWidget {
-  const _AppDrawer();
-
-  @override
-  Widget build(BuildContext context) {
-    return Drawer(
-      child: Column(
-        children: [
-          Container(
-            width: double.infinity,
-            padding: EdgeInsets.fromLTRB(AppSpacing.lg,
-                MediaQuery.of(context).padding.top + AppSpacing.xl,
-                AppSpacing.lg, AppSpacing.lg),
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [AppColors.primary, AppColors.primaryDark],
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const CircleAvatar(
-                  radius: 28,
-                  backgroundColor: Colors.white24,
-                  child: Icon(Icons.person_outline,
-                      color: Colors.white, size: 30),
-                ),
-                const SizedBox(height: AppSpacing.md),
-                Text('Conta',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: Colors.white, fontWeight: FontWeight.w700)),
-                Text('Disponível em breve',
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodySmall
-                        ?.copyWith(color: Colors.white70)),
-              ],
-            ),
-          ),
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-              children: [
-                const _DrawerItem(
-                  icon: Icons.person_outline,
-                  title: 'Dados do usuário',
-                  emBreve: true,
-                ),
-                const _DrawerItem(
-                  icon: Icons.business_outlined,
-                  title: 'Dados da empresa',
-                  emBreve: true,
-                ),
-                const _DrawerItem(
-                  icon: Icons.settings_outlined,
-                  title: 'Configurações',
-                  emBreve: true,
-                ),
-                const Divider(),
-                _DrawerItem(
-                  icon: Icons.info_outline,
-                  title: 'Sobre o AGdata',
-                  onTap: () {
-                    Navigator.pop(context);
-                    showAboutDialog(
-                      context: context,
-                      applicationName: 'AGdata',
-                      applicationVersion: '1.0.0',
-                      applicationIcon:
-                          const Icon(Icons.eco, color: AppColors.primary),
-                      children: const [
-                        Text(
-                            'Ferramenta offline-first de diagnóstico fitossanitário da soja.'),
-                      ],
-                    );
-                  },
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _DrawerItem extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final bool emBreve;
-  final VoidCallback? onTap;
-
-  const _DrawerItem({
-    required this.icon,
-    required this.title,
-    this.emBreve = false,
-    this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final enabled = !emBreve;
-    return ListTile(
-      enabled: enabled,
-      leading: Icon(icon,
-          color: enabled ? AppColors.textSecondary : AppColors.textTertiary),
-      title: Text(title),
-      trailing: emBreve
-          ? Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 2),
-              decoration: BoxDecoration(
-                color: AppColors.surfaceVariant,
-                borderRadius: BorderRadius.circular(AppRadius.pill),
-              ),
-              child: const Text('Em breve',
-                  style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textTertiary)),
-            )
-          : null,
-      onTap: onTap,
-    );
-  }
-}

@@ -20,7 +20,24 @@ class AdminPage extends StatefulWidget {
 class _AdminPageState extends State<AdminPage> {
   final _session = sl<SessionController>();
   final _firestore = FirebaseFirestore.instance;
+  late Future<String> _companyNameFuture;
 
+  @override
+  void initState() {
+    super.initState();
+    _companyNameFuture = _fetchCompanyName(_session.usuario?.companyId ?? '');
+  }
+
+  Future<String> _fetchCompanyName(String companyId) async {
+    if (companyId.isEmpty) return 'Empresa';
+    try {
+      final doc = await _firestore.collection('companies').doc(companyId).get();
+      if (doc.exists) {
+        return (doc.data() as Map<String, dynamic>)['name'] ?? 'Empresa';
+      }
+    } catch (_) {}
+    return 'Empresa';
+  }
 
   Future<void> _enviarAcessoWhatsApp(UserModel user) async {
     final numeroLimpo = user.phone?.replaceAll(RegExp(r'[^0-9]'), '') ?? '';
@@ -92,22 +109,38 @@ class _AdminPageState extends State<AdminPage> {
       drawer: const CustomDrawer(),
       body: Column(
         children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            color: Colors.green.shade50,
-            child: Row(
-              children: [
-                const Icon(Icons.business, color: Color(0xFF2E7D32), size: 20),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    "Unidade ID: $companyId", 
-                    style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1B5E20)),
-                    overflow: TextOverflow.ellipsis,
-                  ),
+          FutureBuilder<String>(
+            future: _companyNameFuture,
+            builder: (context, snap) {
+              final nomeEmpresa = snap.data ?? '...';
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                color: Colors.green.shade50,
+                child: Row(
+                  children: [
+                    const Icon(Icons.business, color: Color(0xFF2E7D32), size: 20),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            nomeEmpresa,
+                            style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1B5E20)),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            'Olá, ${_session.usuario?.name ?? ''}',
+                            style: TextStyle(fontSize: 12, color: Colors.green.shade700),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              );
+            },
           ),
           Expanded(
             child: StreamBuilder<QuerySnapshot>(

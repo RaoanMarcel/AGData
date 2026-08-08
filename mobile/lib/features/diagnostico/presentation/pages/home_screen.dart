@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_dimens.dart';
 import '../../../../core/theme/diagnostico_visuals.dart';
@@ -9,6 +8,7 @@ import '../../../../core/widgets/diagnostico_badge.dart';
 import '../../../../core/widgets/info_pill.dart';
 import '../controllers/home_controller.dart';
 import '../widgets/observacao_field.dart';
+import 'camera_page.dart';
 import 'historico_screen.dart';
 import 'mapa_screen.dart';
 
@@ -167,16 +167,25 @@ class _HomeScreenState extends State<HomeScreen> {
       AppButton(
         label: 'Capturar foto',
         icon: Icons.camera_alt_outlined,
-        onPressed: () => _controller.pickAndProcessImage(
-            ImageSource.camera, widget.talhaoAtual),
+        onPressed: () async {
+          final file = await Navigator.push<File>(
+            context,
+            MaterialPageRoute(
+              fullscreenDialog: true,
+              builder: (_) => const CameraPage(),
+            ),
+          );
+          if (file != null && mounted) {
+            await _controller.processarImagemDaCamera(file, widget.talhaoAtual);
+          }
+        },
       ),
       const SizedBox(height: AppSpacing.md),
       AppButton(
         label: 'Escolher da galeria',
         icon: Icons.photo_library_outlined,
         variant: AppButtonVariant.secondary,
-        onPressed: () => _controller.pickAndProcessImage(
-            ImageSource.gallery, widget.talhaoAtual),
+        onPressed: () => _controller.pickFromGaleria(widget.talhaoAtual),
       ),
     ];
   }

@@ -55,27 +55,27 @@ class HomeController extends ChangeNotifier {
     ].request();
   }
 
-  Future<void> pickAndProcessImage(ImageSource source, String talhao) async {
-    if (source == ImageSource.camera) {
-      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        await Geolocator.openLocationSettings();
-        return;
-      }
-    }
+  /// Processa a foto retornada pela [CameraPage] (câmera nativa in-app).
+  Future<void> processarImagemDaCamera(File arquivo, String talhao) async {
+    _image = arquivo;
+    _status = DiagnosticoStatus.processando;
+    notifyListeners();
+    await _processar(arquivo, talhao, ImageSource.camera);
+  }
 
+  /// Abre a galeria do sistema e processa a foto selecionada.
+  Future<void> pickFromGaleria(String talhao) async {
     final pickedFile = await _picker.pickImage(
-      source: source,
+      source: ImageSource.gallery,
       imageQuality: 100,
     );
-
     if (pickedFile == null) return;
 
     _image = File(pickedFile.path);
     _status = DiagnosticoStatus.processando;
     notifyListeners();
 
-    await _processar(_image!, talhao, source);
+    await _processar(_image!, talhao, ImageSource.gallery);
   }
 
   Future<void> _processar(File image, String talhao, ImageSource source) async {

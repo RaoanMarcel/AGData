@@ -1,14 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart'; 
-import 'package:workmanager/workmanager.dart'; // Adicionado
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:workmanager/workmanager.dart';
 import 'firebase_options.dart';
 import 'features/diagnostico/presentation/pages/home_dashboard_screen.dart';
+import 'features/auth/presentation/pages/login_page.dart';
+import 'features/auth/presentation/pages/super_admin_page.dart';
+import 'features/auth/presentation/pages/admin_page.dart';
+import 'features/diagnostico/presentation/pages/selecao_talhao_screen.dart';
+import 'features/auth/presentation/pages/change_password_page.dart';
+import 'features/auth/data/models/auth_model.dart';
+import 'features/auth/presentation/controller/session_controller.dart';
 import 'features/diagnostico/data/datasources/database_service.dart';
 import 'infra/repositories/sync_repository.dart';
 import 'infra/services/connectivity_service.dart';
-import 'core/theme/app_theme.dart'; 
+import 'core/theme/app_theme.dart';
 import 'core/di/injection_container.dart' as di;
 import 'core/di/injection_container.dart';
 
@@ -16,17 +24,11 @@ import 'core/di/injection_container.dart';
 void callbackDispatcher() {
   Workmanager().executeTask((taskName, inputData) async {
     try {
-      await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      );
-      
+      await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
       await DatabaseService.initialize();
-      
       await di.init();
-
       final syncRepo = sl<SyncRepository>();
       await syncRepo.sincronizarLeituras();
-      
       return Future.value(true);
     } catch (e) {
       return Future.value(false);
@@ -35,7 +37,7 @@ void callbackDispatcher() {
 }
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized(); 
+  WidgetsFlutterBinding.ensureInitialized();
 
   try {
     await dotenv.load(fileName: ".env");
@@ -45,27 +47,21 @@ void main() async {
 
   await SentryFlutter.init(
     (options) {
-      options.dsn = dotenv.env['SENTRY_DSN']; 
+      options.dsn = dotenv.env['SENTRY_DSN'];
       options.tracesSampleRate = 1.0;
       // ignore: experimental_member_use
       options.profilesSampleRate = 1.0;
     },
     appRunner: () async {
       try {
-        await Firebase.initializeApp(
-          options: DefaultFirebaseOptions.currentPlatform,
-        );
-        debugPrint('Firebase inicializado.');
+        await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
       } catch (e, stackTrace) {
-        debugPrint('Erro ao inicializar Firebase: $e');
         await Sentry.captureException(e, stackTrace: stackTrace);
       }
 
       try {
         await DatabaseService.initialize();
-        debugPrint('Banco de dados Isar inicializado.');
       } catch (e, stackTrace) {
-        debugPrint('Erro ao inicializar Isar: $e');
         await Sentry.captureException(e, stackTrace: stackTrace);
       }
 
@@ -75,7 +71,7 @@ void main() async {
         await Workmanager().initialize(
           callbackDispatcher,
         );
-        
+
         await Workmanager().registerPeriodicTask(
           "sync-task-id",
           "syncTask",
@@ -85,32 +81,93 @@ void main() async {
             requiresBatteryNotLow: true,
           ),
         );
-        debugPrint('Workmanager inicializado.');
       } catch (e) {
-        debugPrint('Erro ao inicializar Workmanager: $e');
+        debugPrint('Erro no Workmanager: $e');
       }
 
       sl<ConnectivityService>().configurarOuvinteDeSincronizacao();
-
       _dispararSincronizacaoAutomatica();
 
-      runApp(
-        SentryWidget(
-          child: const AGDataApp(),
-        ),
-      );
+      runApp(SentryWidget(child: const AGDataApp()));
     },
   );
 }
 
 void _dispararSincronizacaoAutomatica() async {
-  final syncRepo = sl<SyncRepository>(); 
+  final syncRepo = sl<SyncRepository>();
   try {
     await syncRepo.sincronizarLeituras();
-    debugPrint('[AUTO-SYNC] Sincronização inicial finalizada.');
   } catch (e, stackTrace) {
-    debugPrint('[AUTO-SYNC] Falha na sincronização automática: $e');
     await Sentry.captureException(e, stackTrace: stackTrace);
+  }
+}
+
+class AuthWrapper extends StatelessWidget {
+  const AuthWrapper({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator(color: Colors.green)),
+          );
+        }
+
+        if (!snapshot.hasData || snapshot.data == null) {
+          return const LoginPage();
+        }
+
+        return FutureBuilder<bool>(
+          future: _inicializarSessaoReal(snapshot.data!.uid),
+          builder: (context, sessionSnapshot) {
+            if (sessionSnapshot.connectionState == ConnectionState.waiting) {
+              return const Scaffold(
+                body: Center(child: CircularProgressIndicator(color: Colors.green)),
+              );
+            }
+
+            if (sessionSnapshot.data == false) {
+              return const LoginPage();
+            }
+
+            final session = sl<SessionController>();
+            final usuario = session.usuario;
+
+            if (usuario != null && usuario.needsPasswordChange) {
+              return const ChangePasswordPage();
+            }
+
+            if (usuario?.role == UserRole.superAdmin) {
+              return const SuperAdminPage();
+            } else if (usuario?.role == UserRole.admin) {
+              return const AdminPage();
+            } else {
+              return const HomeDashboardScreen();
+            }
+          },
+        );
+      },
+    );
+  }
+
+  Future<bool> _inicializarSessaoReal(String uid) async {
+    final session = sl<SessionController>();
+    try {
+      if (session.usuario != null) return true;
+      await session.inicializarUsuario();
+      if (session.usuario == null) {
+        await FirebaseAuth.instance.signOut();
+        return false;
+      }
+      return true;
+    } catch (e) {
+      debugPrint("Erro fatal na carga da sessão: $e");
+      await FirebaseAuth.instance.signOut();
+      return false;
+    }
   }
 }
 
@@ -122,8 +179,14 @@ class AGDataApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'AGdata',
-      home: const HomeDashboardScreen(),
       theme: AppTheme.lightTheme,
+      home: const AuthWrapper(),
+      routes: {
+        '/login': (context) => const LoginPage(),
+        '/super-admin': (context) => const SuperAdminPage(),
+        '/admin': (context) => const AdminPage(),
+        '/selecao-talhao': (context) => const SelecaoTalhaoScreen(),
+      },
     );
   }
 }

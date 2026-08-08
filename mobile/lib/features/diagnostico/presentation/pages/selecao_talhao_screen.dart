@@ -4,8 +4,12 @@ import '../../../../core/theme/app_dimens.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/empty_state.dart';
+import '../../../../core/di/injection_container.dart';
+import '../../../../infra/repositories/sync_repository.dart';
+import '../../../../infra/services/connectivity_service.dart';
 import '../controllers/selecao_talhao_controller.dart';
 import '../widgets/sync_status_button.dart';
+import '../../../auth/presentation/widgets/custom_drawer.dart';
 import 'home_screen.dart';
 
 class SelecaoTalhaoScreen extends StatefulWidget {
@@ -17,8 +21,36 @@ class SelecaoTalhaoScreen extends StatefulWidget {
 
 class _SelecaoTalhaoScreenState extends State<SelecaoTalhaoScreen> {
   final SelecaoTalhaoController _controller = SelecaoTalhaoController();
+  final SyncRepository _syncRepo = sl<SyncRepository>();
+  final ConnectivityService _connectivity = sl<ConnectivityService>();
 
-  /// Abre a tela de análise para o talhão e recarrega as estatísticas ao voltar.
+  bool _isSyncing = false;
+
+  Future<void> _handleManualSync() async {
+    setState(() => _isSyncing = true);
+    final isStable = await _connectivity.triplePingCheck();
+    if (isStable) {
+      try {
+        await _syncRepo.sincronizarLeituras();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Dados sincronizados!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Erro: $e'), backgroundColor: Colors.red),
+          );
+        }
+      }
+    }
+    setState(() => _isSyncing = false);
+  }
+
   Future<void> _iniciarAnalise(String talhao) async {
     await Navigator.push(
       context,
@@ -132,6 +164,10 @@ class _SelecaoTalhaoScreenState extends State<SelecaoTalhaoScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      drawer: CustomDrawer(
+        onSync: _handleManualSync,
+        isSyncing: _isSyncing,
+      ),
       appBar: AppBar(
         title: const Text('Selecionar área'),
         actions: const [SyncStatusButton()],
@@ -193,7 +229,6 @@ class _SelecaoTalhaoScreenState extends State<SelecaoTalhaoScreen> {
   }
 }
 
-/// Cartão de um talhão com metadados (criação, última leitura, total).
 class _TalhaoCard extends StatelessWidget {
   final String nome;
   final DateTime dataCriacao;

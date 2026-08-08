@@ -102,6 +102,15 @@ class CustomDrawer extends StatelessWidget {
             ),
           ),
           ListTile(
+            leading: const Icon(Icons.home_outlined, color: Color(0xFF2E7D32)),
+            title: const Text("Início"),
+            subtitle: const Text("Voltar para a tela principal"),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+            },
+          ),
+          ListTile(
             leading: const Icon(Icons.center_focus_strong_outlined, color: Color(0xFF2E7D32)),
             title: const Text("Nova Análise"),
             subtitle: const Text("Selecionar talhão e diagnosticar"),

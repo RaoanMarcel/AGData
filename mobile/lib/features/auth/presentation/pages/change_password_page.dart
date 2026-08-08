@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../controller/session_controller.dart';
-import '../../../../features/diagnostico/presentation/pages/selecao_talhao_screen.dart';
 
 class ChangePasswordPage extends StatefulWidget {
   const ChangePasswordPage({super.key});
@@ -61,11 +60,8 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
           ),
         );
 
-        // 3. Redireciona limpando a pilha para evitar que o usuário volte para esta tela
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const SelecaoTalhaoScreen()),
-          (route) => false,
-        );
+        // 3. Volta para o AuthWrapper, que roteia pelo role (operador → HomeDashboard, admin → AdminPage, etc.)
+        Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
       }
     } catch (e) {
       if (mounted) {

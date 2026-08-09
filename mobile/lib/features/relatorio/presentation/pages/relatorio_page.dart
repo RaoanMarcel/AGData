@@ -107,12 +107,20 @@ class _RelatorioPageState extends State<RelatorioPage> {
       );
 
       if (!mounted) return;
-      final dir = await getTemporaryDirectory();
+      final extDir = await getExternalStorageDirectory();
+      final dir = extDir ?? await getTemporaryDirectory();
       final ts = DateTime.now().millisecondsSinceEpoch;
-      final file = File('${dir.path}/relatorio_$ts.pdf');
+      final fileName = 'relatorio_${_empresaNome.replaceAll(' ', '_')}_$ts.pdf';
+      final file = File('${dir.path}/$fileName');
       await file.writeAsBytes(pdfBytes);
 
       if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('PDF salvo em: ${file.path}'),
+          duration: const Duration(seconds: 6),
+        ),
+      );
       await Share.shareXFiles(
         [XFile(file.path, mimeType: 'application/pdf')],
         subject: 'Relatório Fitossanitário — $_empresaNome',

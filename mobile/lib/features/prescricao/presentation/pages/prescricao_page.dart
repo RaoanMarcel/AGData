@@ -149,12 +149,20 @@ class _PrescricaoPageState extends State<PrescricaoPage> {
         empresaNome: _empresaNome,
       );
 
-      final dir = await getTemporaryDirectory();
+      final extDir = await getExternalStorageDirectory();
+      final dir = extDir ?? await getTemporaryDirectory();
       final ts = DateTime.now().millisecondsSinceEpoch;
-      final file = File('${dir.path}/prescricao_$ts.zip');
+      final fileName = 'prescricao_${(_talhaoSelected ?? 'talhao').replaceAll(' ', '_')}_$ts.zip';
+      final file = File('${dir.path}/$fileName');
       await file.writeAsBytes(zipBytes);
 
       if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Arquivo salvo em: ${file.path}'),
+          duration: const Duration(seconds: 6),
+        ),
+      );
       await Share.shareXFiles(
         [XFile(file.path, mimeType: 'application/zip')],
         subject: 'Prescrição ISOBUS — ${_talhaoSelected ?? ''}',

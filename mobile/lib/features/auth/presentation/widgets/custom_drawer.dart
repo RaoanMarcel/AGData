@@ -6,6 +6,7 @@ import '../../../auth/data/models/auth_model.dart';
 import '../../../auth/data/repositories/auth_repository.dart';
 import '../../../auth/presentation/pages/super_admin_page.dart';
 import '../../../auth/presentation/pages/admin_page.dart';
+import '../../../diagnostico/presentation/pages/home_dashboard_screen.dart';
 import '../../../diagnostico/presentation/pages/selecao_talhao_screen.dart';
 import '../../../diagnostico/presentation/pages/historico_screen.dart';
 import '../../../diagnostico/presentation/pages/mapa_screen.dart';
@@ -78,8 +79,15 @@ class CustomDrawer extends StatelessWidget {
                     subtitle: const Text("Voltar para a tela principal"),
                     onTap: () {
                       Navigator.pop(context);
-                      Navigator.of(context)
-                          .pushNamedAndRemoveUntil('/', (route) => false);
+                      final role = sl<SessionController>().usuario?.role;
+                      Navigator.of(context).pushAndRemoveUntil(
+                        MaterialPageRoute(
+                          builder: (_) => role == UserRole.admin
+                              ? const AdminPage()
+                              : const HomeDashboardScreen(),
+                        ),
+                        (route) => false,
+                      );
                     },
                   ),
 

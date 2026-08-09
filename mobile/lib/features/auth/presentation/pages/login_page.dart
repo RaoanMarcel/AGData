@@ -1,9 +1,10 @@
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../controller/session_controller.dart';
-import '../pages/forgot_password_page.dart'; 
+import '../pages/forgot_password_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -83,8 +84,34 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: Center(
-        child: SingleChildScrollView(
+      body: Column(
+        children: [
+          StreamBuilder<List<ConnectivityResult>>(
+            stream: Connectivity().onConnectivityChanged,
+            builder: (context, snapshot) {
+              final isOffline = snapshot.hasData &&
+                  snapshot.data!.every((r) => r == ConnectivityResult.none);
+              if (!isOffline) return const SizedBox.shrink();
+              return Container(
+                width: double.infinity,
+                color: Colors.red.shade700,
+                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                child: const Row(
+                  children: [
+                    Icon(Icons.wifi_off, color: Colors.white, size: 16),
+                    SizedBox(width: 8),
+                    Text(
+                      'Sem conexão com a internet',
+                      style: TextStyle(color: Colors.white, fontSize: 13),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+          Expanded(
+            child: Center(
+              child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
           child: Form(
             key: _formKey,
@@ -173,7 +200,10 @@ class _LoginPageState extends State<LoginPage> {
               ],
             ),
           ),
-        ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

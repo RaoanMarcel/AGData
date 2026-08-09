@@ -525,41 +525,25 @@ class _ConfigFormState extends State<_ConfigForm> {
           onChanged: (_) => _notificar(),
         ),
         const SizedBox(height: AppSpacing.md),
-        Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: _sem,
-                decoration:
-                    dec.copyWith(labelText: 'Sem doença', suffixText: 'L/ha'),
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                onChanged: (_) => _notificar(),
-              ),
-            ),
-            const SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: TextField(
-                controller: _prev,
-                decoration: dec.copyWith(
-                    labelText: 'Preventivo', suffixText: 'L/ha'),
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                onChanged: (_) => _notificar(),
-              ),
-            ),
-            const SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: TextField(
-                controller: _curat,
-                decoration: dec.copyWith(
-                    labelText: 'Curativo', suffixText: 'L/ha'),
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                onChanged: (_) => _notificar(),
-              ),
-            ),
-          ],
+        TextField(
+          controller: _sem,
+          decoration: dec.copyWith(labelText: 'Taxa sem doença', suffixText: 'L/ha'),
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          onChanged: (_) => _notificar(),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        TextField(
+          controller: _prev,
+          decoration: dec.copyWith(labelText: 'Taxa preventiva', suffixText: 'L/ha'),
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          onChanged: (_) => _notificar(),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        TextField(
+          controller: _curat,
+          decoration: dec.copyWith(labelText: 'Taxa curativa', suffixText: 'L/ha'),
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          onChanged: (_) => _notificar(),
         ),
       ],
     );

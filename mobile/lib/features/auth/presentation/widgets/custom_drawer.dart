@@ -10,6 +10,7 @@ import '../../../diagnostico/presentation/pages/selecao_talhao_screen.dart';
 import '../../../diagnostico/presentation/pages/historico_screen.dart';
 import '../../../diagnostico/presentation/pages/mapa_screen.dart';
 import '../../../relatorio/presentation/pages/relatorio_page.dart';
+import '../../../prescricao/presentation/pages/prescricao_page.dart';
 
 class CustomDrawer extends StatelessWidget {
   final VoidCallback? onSync;
@@ -107,7 +108,7 @@ class CustomDrawer extends StatelessWidget {
             const Divider(),
             const Padding(
               padding: EdgeInsets.only(left: 16, top: 8, bottom: 4),
-              child: Text("ADMINISTRAÇÃO", 
+              child: Text("ADMINISTRAÇÃO",
                 style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold, fontSize: 12)),
             ),
             ListTile(
@@ -121,6 +122,16 @@ class CustomDrawer extends StatelessWidget {
                     builder: (context) => isSuperAdmin ? const SuperAdminPage() : const AdminPage(),
                   ),
                 );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.agriculture, color: Color(0xFF558B2F)),
+              title: const Text("Prescrição de Máquina"),
+              subtitle: const Text("Exportar mapa ISOBUS para pulverizador"),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => const PrescricaoPage()));
               },
             ),
           ],

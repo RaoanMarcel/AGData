@@ -43,10 +43,15 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!mounted) return;
     if (ok) {
       _obsController.clear();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Leitura salva com sucesso!'),
-          backgroundColor: AppColors.syncSuccess,
+      await showGeneralDialog(
+        context: context,
+        barrierDismissible: false,
+        barrierColor: Colors.black26,
+        transitionDuration: const Duration(milliseconds: 350),
+        pageBuilder: (_, __, ___) => const _SucessoDialog(),
+        transitionBuilder: (_, anim, __, child) => ScaleTransition(
+          scale: CurvedAnimation(parent: anim, curve: Curves.elasticOut),
+          child: FadeTransition(opacity: anim, child: child),
         ),
       );
     }
@@ -355,6 +360,47 @@ class _MessageCard extends StatelessWidget {
                 textAlign: TextAlign.center, style: textTheme.bodyMedium),
           ],
         ],
+      ),
+    );
+  }
+}
+
+class _SucessoDialog extends StatefulWidget {
+  const _SucessoDialog();
+
+  @override
+  State<_SucessoDialog> createState() => _SucessoDialogState();
+}
+
+class _SucessoDialogState extends State<_SucessoDialog> {
+  @override
+  void initState() {
+    super.initState();
+    Future.delayed(const Duration(milliseconds: 1400), () {
+      if (mounted) Navigator.of(context).pop();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Container(
+        width: 160,
+        height: 160,
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(AppRadius.xl),
+          boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 24)],
+        ),
+        child: const Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.check_circle_outline, color: AppColors.primary, size: 72),
+            SizedBox(height: AppSpacing.sm),
+            Text('Salvo!',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+          ],
+        ),
       ),
     );
   }

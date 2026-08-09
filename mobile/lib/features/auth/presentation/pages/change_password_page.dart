@@ -132,6 +132,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                       controller: _novaSenhaController,
                       obscureText: !_senhaVisivel,
                       keyboardType: TextInputType.visiblePassword,
+                      onChanged: (_) => setState(() {}),
                       decoration: InputDecoration(
                         labelText: "Nova Senha *",
                         hintText: "Mínimo 6 caracteres",
@@ -143,6 +144,10 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                       ),
                       validator: (v) => (v == null || v.length < 6) ? "Senha muito curta" : null,
                     ),
+                    if (_novaSenhaController.text.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      _ForcaSenhaBar(senha: _novaSenhaController.text),
+                    ],
 
                     const SizedBox(height: 20),
 
@@ -191,6 +196,46 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _ForcaSenhaBar extends StatelessWidget {
+  final String senha;
+  const _ForcaSenhaBar({required this.senha});
+
+  int _calcularForca() {
+    if (senha.length < 6) return 1;
+    int p = 1;
+    if (senha.length >= 8) p++;
+    if (RegExp(r'[A-Z]').hasMatch(senha) && RegExp(r'[0-9]').hasMatch(senha)) p++;
+    return p;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final forca = _calcularForca();
+    final cores = [Colors.red, Colors.orange, Colors.green];
+    final labels = ['Fraca', 'Média', 'Forte'];
+    final cor = cores[forca - 1];
+    final label = labels[forca - 1];
+
+    return Row(
+      children: [
+        Expanded(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: forca / 3,
+              minHeight: 6,
+              backgroundColor: Colors.grey.shade200,
+              valueColor: AlwaysStoppedAnimation(cor),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(label, style: TextStyle(fontSize: 12, color: cor, fontWeight: FontWeight.w600)),
+      ],
     );
   }
 }

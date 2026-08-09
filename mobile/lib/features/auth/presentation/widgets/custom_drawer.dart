@@ -31,53 +31,7 @@ class CustomDrawer extends StatelessWidget {
     return Drawer(
       child: Column(
         children: [
-          UserAccountsDrawerHeader(
-            margin: EdgeInsets.zero, // Remove margens extras que podem causar desalinhamento
-            decoration: BoxDecoration(
-              color: isSuperAdmin ? const Color(0xFF1B5E20) : const Color(0xFF2E7D32),
-            ),
-            currentAccountPicture: CircleAvatar(
-              backgroundColor: Colors.white,
-              child: Icon(
-                isSuperAdmin ? Icons.admin_panel_settings : Icons.person,
-                color: isSuperAdmin ? const Color(0xFF1B5E20) : const Color(0xFF2E7D32),
-                size: 40,
-              ),
-            ),
-            // BUG FIX: Removi a Column complexa do accountName que causava o overflow.
-            // Agora o nome e a empresa são tratados de forma que o Header gerencie o espaço.
-            accountName: Text(
-              user?.name ?? 'Usuário',
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-            accountEmail: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(user?.email ?? ''),
-                if (!isSuperAdmin && user?.companyId != null)
-                  FutureBuilder<DocumentSnapshot>(
-                    future: FirebaseFirestore.instance
-                        .collection('companies')
-                        .doc(user!.companyId)
-                        .get(),
-                    builder: (context, snapshot) {
-                      String empresa = snapshot.hasData && snapshot.data!.exists
-                          ? (snapshot.data!.data() as Map<String, dynamic>)['name'] ?? 'Empresa'
-                          : "...";
-                      return Text(
-                        empresa,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: Colors.white70,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      );
-                    },
-                  ),
-              ],
-            ),
-          ),
+          _DrawerHeader(user: user, isSuperAdmin: isSuperAdmin),
 
           // OPÇÃO DE SINCRONIZAÇÃO
           if (onSync != null)
@@ -197,6 +151,91 @@ class CustomDrawer extends StatelessWidget {
             },
             child: const Text("SAIR", style: TextStyle(color: Colors.white)),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Cabeçalho do drawer com espaçamento manual ────────────────────────────
+
+class _DrawerHeader extends StatelessWidget {
+  final dynamic user;
+  final bool isSuperAdmin;
+
+  const _DrawerHeader({required this.user, required this.isSuperAdmin});
+
+  @override
+  Widget build(BuildContext context) {
+    final topPadding = MediaQuery.of(context).padding.top;
+    final bgColor =
+        isSuperAdmin ? const Color(0xFF1B5E20) : const Color(0xFF2E7D32);
+
+    return Container(
+      width: double.infinity,
+      color: bgColor,
+      padding: EdgeInsets.fromLTRB(20, topPadding + 20, 20, 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Avatar
+          CircleAvatar(
+            radius: 30,
+            backgroundColor: Colors.white,
+            child: Icon(
+              isSuperAdmin ? Icons.admin_panel_settings : Icons.person,
+              color: bgColor,
+              size: 34,
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // Nome
+          Text(
+            user?.name ?? 'Usuário',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 2),
+
+          // E-mail
+          Text(
+            user?.email ?? '',
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 12,
+            ),
+          ),
+
+          // Nome da empresa (apenas para admin/operador)
+          if (!isSuperAdmin && user?.companyId != null) ...[
+            const SizedBox(height: 2),
+            FutureBuilder<DocumentSnapshot>(
+              future: FirebaseFirestore.instance
+                  .collection('companies')
+                  .doc(user!.companyId as String)
+                  .get(),
+              builder: (context, snapshot) {
+                final nome = snapshot.hasData && snapshot.data!.exists
+                    ? (snapshot.data!.data()
+                            as Map<String, dynamic>)['name'] ??
+                        ''
+                    : '';
+                if (nome.isEmpty) return const SizedBox.shrink();
+                return Text(
+                  nome,
+                  style: const TextStyle(
+                    color: Colors.white60,
+                    fontSize: 11,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                );
+              },
+            ),
+          ],
         ],
       ),
     );

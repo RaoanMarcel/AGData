@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_dimens.dart';
@@ -8,7 +9,6 @@ import '../../../../core/widgets/diagnostico_badge.dart';
 import '../../../../core/widgets/info_pill.dart';
 import '../controllers/home_controller.dart';
 import '../widgets/observacao_field.dart';
-import 'camera_page.dart';
 import 'historico_screen.dart';
 import 'mapa_screen.dart';
 
@@ -20,22 +20,74 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   final HomeController _controller = HomeController();
   final TextEditingController _obsController = TextEditingController();
+
+  CameraController? _cam;
+  bool _camReady = false;
+  bool _isCapturing = false;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _controller.solicitarPermissoesIniciais();
+    WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _controller.solicitarPermissoesIniciais();
+      await _initCamera();
     });
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _cam?.dispose();
     _obsController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final cam = _cam;
+    if (cam == null || !cam.value.isInitialized) return;
+    if (state == AppLifecycleState.inactive) {
+      cam.dispose();
+      if (mounted) setState(() { _cam = null; _camReady = false; });
+    } else if (state == AppLifecycleState.resumed) {
+      _initCamera();
+    }
+  }
+
+  Future<void> _initCamera() async {
+    try {
+      final cameras = await availableCameras();
+      if (cameras.isEmpty || !mounted) return;
+      final ctrl = CameraController(
+        cameras.first,
+        ResolutionPreset.high,
+        enableAudio: false,
+        imageFormatGroup: ImageFormatGroup.jpeg,
+      );
+      await ctrl.initialize();
+      if (!mounted) { await ctrl.dispose(); return; }
+      setState(() { _cam = ctrl; _camReady = true; });
+    } catch (_) {}
+  }
+
+  Future<void> _capturar() async {
+    final cam = _cam;
+    if (cam == null || !_camReady || _isCapturing) return;
+    setState(() => _isCapturing = true);
+    try {
+      final xFile = await cam.takePicture();
+      if (mounted) {
+        await _controller.processarImagemDaCamera(
+            File(xFile.path), widget.talhaoAtual);
+      }
+    } catch (_) {
+    } finally {
+      if (mounted) setState(() => _isCapturing = false);
+    }
   }
 
   Future<void> _salvar() async {
@@ -57,6 +109,8 @@ class _HomeScreenState extends State<HomeScreen> {
     _obsController.clear();
   }
 
+  // ── Build ────────────────────────────────────────────────────────────────
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -67,7 +121,7 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: const Icon(Icons.map_outlined),
             tooltip: 'Mapa de ocorrências',
             onPressed: () => Navigator.push(context,
-                MaterialPageRoute(builder: (context) => const MapaScreen())),
+                MaterialPageRoute(builder: (_) => const MapaScreen())),
           ),
           IconButton(
             icon: const Icon(Icons.history),
@@ -75,7 +129,7 @@ class _HomeScreenState extends State<HomeScreen> {
             onPressed: () => Navigator.push(
                 context,
                 MaterialPageRoute(
-                    builder: (context) =>
+                    builder: (_) =>
                         HistoricoScreen(talhaoInicial: widget.talhaoAtual))),
           ),
         ],
@@ -88,7 +142,7 @@ class _HomeScreenState extends State<HomeScreen> {
               padding: const EdgeInsets.all(AppSpacing.xl),
               child: Column(
                 children: [
-                  _ImagePreview(image: _controller.image),
+                  _buildPreviewArea(),
                   const SizedBox(height: AppSpacing.xl),
                   ..._buildEstado(_controller.status),
                 ],
@@ -99,6 +153,34 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+
+  // ── Preview (câmera embarcada ou imagem capturada) ───────────────────────
+
+  Widget _buildPreviewArea() {
+    final status = _controller.status;
+    final image = _controller.image;
+
+    // Imagem capturada — mostra a foto
+    if (image != null &&
+        (status == DiagnosticoStatus.revisao ||
+            status == DiagnosticoStatus.processando)) {
+      return _StaticImage(image: image);
+    }
+
+    // Câmera embarcada — estados inicial e erro
+    if (_camReady && _cam != null) {
+      return _EmbeddedCamera(
+        controller: _cam!,
+        isCapturing: _isCapturing,
+        onCapture: _capturar,
+      );
+    }
+
+    // Placeholder enquanto câmera inicializa
+    return _PlaceholderPreview(loading: !_camReady);
+  }
+
+  // ── Estado da tela ────────────────────────────────────────────────────────
 
   List<Widget> _buildEstado(DiagnosticoStatus status) {
     switch (status) {
@@ -145,40 +227,22 @@ class _HomeScreenState extends State<HomeScreen> {
             subtitulo: _controller.mensagemErro,
             isErro: true,
           ),
-          const SizedBox(height: AppSpacing.xl),
+          const SizedBox(height: AppSpacing.md),
           ..._botoesCaptura(),
         ];
 
       case DiagnosticoStatus.inicial:
-        return [
-          const _MessageCard(
-            titulo: 'Pronto para analisar',
-            subtitulo: 'Capture ou selecione uma foto da soja.',
-            isErro: false,
-          ),
-          const SizedBox(height: AppSpacing.xl),
-          ..._botoesCaptura(),
-        ];
+        return _botoesCaptura();
     }
   }
 
   List<Widget> _botoesCaptura() {
     return [
       AppButton(
-        label: 'Capturar foto',
+        label: _isCapturing ? 'Capturando...' : 'Capturar foto',
         icon: Icons.camera_alt_outlined,
-        onPressed: () async {
-          final file = await Navigator.push<File>(
-            context,
-            MaterialPageRoute(
-              fullscreenDialog: true,
-              builder: (_) => const CameraPage(),
-            ),
-          );
-          if (file != null && mounted) {
-            await _controller.processarImagemDaCamera(file, widget.talhaoAtual);
-          }
-        },
+        loading: _isCapturing,
+        onPressed: (_camReady && !_isCapturing) ? _capturar : null,
       ),
       const SizedBox(height: AppSpacing.md),
       AppButton(
@@ -191,14 +255,153 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-/// Área quadrada de pré-visualização da imagem (ou placeholder de captura).
-class _ImagePreview extends StatelessWidget {
-  final File? image;
-  const _ImagePreview({required this.image});
+// ── Câmera embarcada no quadro ────────────────────────────────────────────
+
+class _EmbeddedCamera extends StatelessWidget {
+  final CameraController controller;
+  final bool isCapturing;
+  final VoidCallback onCapture;
+
+  const _EmbeddedCamera({
+    required this.controller,
+    required this.isCapturing,
+    required this.onCapture,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final hasImage = image != null;
+    return AspectRatio(
+      aspectRatio: 1,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            // Preview preenchendo o quadrado (crop central)
+            _SquareCameraPreview(controller: controller),
+
+            // Marcadores de canto
+            const IgnorePointer(
+              child: CustomPaint(
+                size: Size.infinite,
+                painter: _CornerPainter(),
+              ),
+            ),
+
+            // Instrução + flash de captura
+            if (isCapturing)
+              Container(color: Colors.white.withValues(alpha: 0.35))
+            else
+              Align(
+                alignment: const Alignment(0, 0.88),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 14, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.50),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Text(
+                    'Enquadre a folha',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        letterSpacing: 0.3),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SquareCameraPreview extends StatelessWidget {
+  final CameraController controller;
+  const _SquareCameraPreview({required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
+    final size = controller.value.previewSize;
+    if (size == null) return const SizedBox.expand();
+
+    // previewSize é em orientação landscape; no portrait, invertemos.
+    final double w = size.height;
+    final double h = size.width;
+
+    return FittedBox(
+      fit: BoxFit.cover,
+      child: SizedBox(
+        width: w,
+        height: h,
+        child: CameraPreview(controller),
+      ),
+    );
+  }
+}
+
+// ── Marcadores de canto (overlay leve) ───────────────────────────────────
+
+class _CornerPainter extends CustomPainter {
+  const _CornerPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = const Color(0xFF66BB6A)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3.0
+      ..strokeCap = StrokeCap.round;
+
+    const pad = 12.0;
+    const arm = 22.0;
+    final l = pad, t = pad, r = size.width - pad, b = size.height - pad;
+
+    // Superior-esquerdo
+    canvas.drawLine(Offset(l, t + arm), Offset(l, t), paint);
+    canvas.drawLine(Offset(l, t), Offset(l + arm, t), paint);
+    // Superior-direito
+    canvas.drawLine(Offset(r - arm, t), Offset(r, t), paint);
+    canvas.drawLine(Offset(r, t), Offset(r, t + arm), paint);
+    // Inferior-esquerdo
+    canvas.drawLine(Offset(l, b - arm), Offset(l, b), paint);
+    canvas.drawLine(Offset(l, b), Offset(l + arm, b), paint);
+    // Inferior-direito
+    canvas.drawLine(Offset(r - arm, b), Offset(r, b), paint);
+    canvas.drawLine(Offset(r, b), Offset(r, b - arm), paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter _) => false;
+}
+
+// ── Imagem estática capturada ─────────────────────────────────────────────
+
+class _StaticImage extends StatelessWidget {
+  final File image;
+  const _StaticImage({required this.image});
+
+  @override
+  Widget build(BuildContext context) {
+    return AspectRatio(
+      aspectRatio: 1,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        child: Image.file(image, fit: BoxFit.cover),
+      ),
+    );
+  }
+}
+
+// ── Placeholder enquanto câmera inicializa ────────────────────────────────
+
+class _PlaceholderPreview extends StatelessWidget {
+  final bool loading;
+  const _PlaceholderPreview({this.loading = false});
+
+  @override
+  Widget build(BuildContext context) {
     return AspectRatio(
       aspectRatio: 1,
       child: AnimatedContainer(
@@ -206,30 +409,28 @@ class _ImagePreview extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.surfaceVariant,
           borderRadius: BorderRadius.circular(AppRadius.lg),
-          border: Border.all(
-            color: hasImage ? AppColors.primary : AppColors.outline,
-            width: 2,
-          ),
-          image: hasImage
-              ? DecorationImage(image: FileImage(image!), fit: BoxFit.cover)
-              : null,
+          border: Border.all(color: AppColors.outline, width: 2),
         ),
-        child: hasImage
-            ? null
-            : Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.add_a_photo_outlined,
-                      size: 64, color: AppColors.textTertiary),
-                  const SizedBox(height: AppSpacing.md),
-                  Text('Pronto para analisar',
-                      style: Theme.of(context).textTheme.bodyMedium),
-                ],
-              ),
+        child: Center(
+          child: loading
+              ? const CircularProgressIndicator()
+              : Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.camera_alt_outlined,
+                        size: 64, color: AppColors.textTertiary),
+                    const SizedBox(height: AppSpacing.md),
+                    Text('Iniciando câmera...',
+                        style: Theme.of(context).textTheme.bodyMedium),
+                  ],
+                ),
+        ),
       ),
     );
   }
 }
+
+// ── Cards auxiliares ──────────────────────────────────────────────────────
 
 class _LoadingCard extends StatelessWidget {
   const _LoadingCard();
@@ -255,7 +456,6 @@ class _LoadingCard extends StatelessWidget {
   }
 }
 
-/// Card de revisão do diagnóstico: badge + barra de precisão + GPS.
 class _DiagnosticoRevisaoCard extends StatelessWidget {
   final String resultado;
   final double confiancaValor;
@@ -340,8 +540,7 @@ class _MessageCard extends StatelessWidget {
       child: Column(
         children: [
           if (isErro) ...[
-            const Icon(Icons.error_outline,
-                color: AppColors.danger, size: 32),
+            const Icon(Icons.error_outline, color: AppColors.danger, size: 32),
             const SizedBox(height: AppSpacing.sm),
           ],
           Text(

@@ -1,7 +1,9 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/section_header.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -159,9 +161,12 @@ class _SuperAdminPageState extends State<SuperAdminPage> {
       barrierDismissible: false,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-        title: const Text(
-          "🚀 Sucesso!",
-          style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
+        title: const Row(
+          children: [
+            Icon(Icons.check_circle, color: Colors.green),
+            SizedBox(width: 8),
+            Text('Empresa cadastrada', style: TextStyle(fontWeight: FontWeight.bold)),
+          ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -178,20 +183,36 @@ class _SuperAdminPageState extends State<SuperAdminPage> {
             const SizedBox(height: 8),
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               decoration: BoxDecoration(
                 color: Colors.blueGrey.shade50,
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: SelectableText(
-                senha,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.blueAccent,
-                  letterSpacing: 4,
-                ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: SelectableText(
+                      senha,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blueAccent,
+                        letterSpacing: 4,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.copy, size: 20),
+                    tooltip: 'Copiar senha',
+                    onPressed: () {
+                      Clipboard.setData(ClipboardData(text: senha));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Senha copiada!')),
+                      );
+                    },
+                  ),
+                ],
               ),
             ),
           ],
@@ -256,15 +277,7 @@ class _SuperAdminPageState extends State<SuperAdminPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text(
-            'DADOS DA EMPRESA',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: Colors.green,
-              letterSpacing: 1.2,
-            ),
-          ),
+          const SectionHeader(title: 'Dados da empresa'),
           const SizedBox(height: 12),
           TextFormField(
             controller: _nomeEmpresaController,
@@ -286,15 +299,7 @@ class _SuperAdminPageState extends State<SuperAdminPage> {
             keyboardType: TextInputType.number,
           ),
           const Divider(height: 40, thickness: 1),
-          const Text(
-            'ADMINISTRADOR RESPONSÁVEL',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: Colors.green,
-              letterSpacing: 1.2,
-            ),
-          ),
+          const SectionHeader(title: 'Administrador responsável'),
           const SizedBox(height: 12),
           TextFormField(
             controller: _nomeAdminController,

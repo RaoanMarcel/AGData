@@ -1,11 +1,13 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 // Imports baseados na sua estrutura de pastas
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/section_header.dart';
 import '../controller/session_controller.dart';
 import '../../data/models/auth_model.dart';
 import '../../data/repositories/auth_repository.dart';
@@ -116,7 +118,13 @@ class _AddUserPageState extends State<AddUserPage> {
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: const Text("Sucesso!", style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+        title: const Row(
+          children: [
+            Icon(Icons.check_circle, color: Colors.green),
+            SizedBox(width: 8),
+            Text('Usuário cadastrado', style: TextStyle(fontWeight: FontWeight.bold)),
+          ],
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -125,12 +133,31 @@ class _AddUserPageState extends State<AddUserPage> {
             const SizedBox(height: 16),
             const Text("Senha provisória:", style: TextStyle(fontWeight: FontWeight.bold)),
             Container(
-              padding: const EdgeInsets.all(8),
               margin: const EdgeInsets.symmetric(vertical: 8),
               decoration: BoxDecoration(color: Colors.blueGrey.shade50, borderRadius: BorderRadius.circular(8)),
-              child: SelectableText(
-                senha, 
-                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.blueAccent, letterSpacing: 4)
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: SelectableText(
+                        senha,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.blueAccent, letterSpacing: 4),
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.copy, size: 20),
+                    tooltip: 'Copiar senha',
+                    onPressed: () {
+                      Clipboard.setData(ClipboardData(text: senha));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Senha copiada!')),
+                      );
+                    },
+                  ),
+                ],
               ),
             ),
           ],
@@ -171,10 +198,7 @@ class _AddUserPageState extends State<AddUserPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text(
-                'DADOS DO NOVO USUÁRIO', 
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.green, letterSpacing: 1.2)
-              ),
+              const SectionHeader(title: 'Dados do novo usuário'),
               const SizedBox(height: 24),
               
               TextFormField(

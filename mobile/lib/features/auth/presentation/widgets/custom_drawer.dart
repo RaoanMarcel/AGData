@@ -9,6 +9,7 @@ import '../../../auth/presentation/pages/admin_page.dart';
 import '../../../diagnostico/presentation/pages/selecao_talhao_screen.dart';
 import '../../../diagnostico/presentation/pages/historico_screen.dart';
 import '../../../diagnostico/presentation/pages/mapa_screen.dart';
+import '../../../relatorio/presentation/pages/relatorio_page.dart';
 
 class CustomDrawer extends StatelessWidget {
   final VoidCallback? onSync;
@@ -89,6 +90,15 @@ class CustomDrawer extends StatelessWidget {
             onTap: () {
               Navigator.pop(context);
               Navigator.push(context, MaterialPageRoute(builder: (_) => const MapaScreen()));
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.picture_as_pdf_outlined, color: Color(0xFFBF360C)),
+            title: const Text("Relatórios"),
+            subtitle: const Text("Gerar PDF fitossanitário"),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const RelatorioPage()));
             },
           ),
 

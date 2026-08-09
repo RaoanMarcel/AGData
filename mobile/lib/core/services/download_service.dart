@@ -18,7 +18,8 @@ class DownloadService {
         'fileName': fileName,
         'mimeType': mimeType,
       });
-    } on PlatformException {
+    } catch (_) {
+      // MissingPluginException, PlatformException ou qualquer falha nativa
       return null;
     }
   }

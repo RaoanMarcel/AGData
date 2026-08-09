@@ -64,34 +64,32 @@ class IsobusService {
       });
 
       // Campo / Talhão
+      // D = PartfieldArea (m²), E = PartfieldAreaUnit (0 = m²)
       final areaTotalM2 =
           (grade.nRows * grade.cellHeightDeg * 111000) *
           (grade.nCols * grade.cellWidthDeg * 111000);
       builder.element('PFD', attributes: {
         'A': 'PFD1',
         'B': talhaoNome,
-        'C': 'PFD1',
-        'D': '1',
-        'E': areaTotalM2.toInt().toString(),
+        'D': areaTotalM2.toInt().toString(),
+        'E': '0',
         'F': 'FRM1',
       });
 
-      // Produto
+      // Produto (C e D são opcionais e omitidos para evitar erros de validação)
       builder.element('PDT', attributes: {
         'A': 'PDT1',
         'B': config.nomeProduto,
-        'C': '',
-        'D': '',
       });
 
       // Tarefa com grade de prescrição
+      // F (ResponsibleWorkerIdRef) é omitido — não temos WKR definido
       builder.element('TSK', attributes: {
         'A': 'TSK1',
         'B': 'Prescricao ${config.nomeProduto} - $talhaoNome',
         'C': 'CTR1',
         'D': 'FRM1',
         'E': 'PFD1',
-        'F': 'PDT1',
         'G': '1',
       }, nest: () {
         // GRD: Grade de prescrição (GridType 2 = valores diretos por célula)

@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../../core/di/injection_container.dart';
@@ -32,6 +33,7 @@ class CustomDrawer extends StatelessWidget {
     final bool temAcessoGestao = isSuperAdmin || isAdmin;
 
     return Drawer(
+      width: math.min(MediaQuery.of(context).size.width * 0.85, 320),
       child: Column(
         children: [
           _DrawerHeader(user: user, isSuperAdmin: isSuperAdmin),

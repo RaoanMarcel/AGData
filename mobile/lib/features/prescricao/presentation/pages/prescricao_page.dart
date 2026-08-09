@@ -65,6 +65,20 @@ class _PrescricaoPageState extends State<PrescricaoPage> {
     if (mounted) setState(() => _loading = false);
   }
 
+  // Garante que o valor do dropdown de talhão sempre existe na lista de itens
+  String? get _safeSelected {
+    if (_talhaoSelected == null) return null;
+    if (_talhoes.any((t) => t.nome == _talhaoSelected)) return _talhaoSelected;
+    return _talhoes.isNotEmpty ? _talhoes.first.nome : null;
+  }
+
+  // Garante que o tamanho de célula é sempre um dos valores válidos
+  static const _validCellSizes = [10.0, 20.0, 50.0];
+  double get _safeCellSize =>
+      _validCellSizes.contains(_config.tamanhoCelulaMetros)
+          ? _config.tamanhoCelulaMetros
+          : 20.0;
+
   void _recalcularGrade() {
     final leituras = _leiturasFiltered;
     setState(() => _grade = GridService.gerarGrade(leituras, _config));
@@ -187,7 +201,7 @@ class _PrescricaoPageState extends State<PrescricaoPage> {
                           child: DropdownButton<String>(
                             isExpanded: true,
                             underline: const SizedBox(),
-                            value: _talhaoSelected,
+                            value: _safeSelected,
                             hint: const Text('Selecionar talhão'),
                             items: _talhoes
                                 .map((t) => DropdownMenuItem(
@@ -255,7 +269,7 @@ class _PrescricaoPageState extends State<PrescricaoPage> {
                           child: DropdownButton<double>(
                             isExpanded: true,
                             underline: const SizedBox(),
-                            value: _config.tamanhoCelulaMetros,
+                            value: _safeCellSize,
                             items: const [
                               DropdownMenuItem(
                                   value: 10.0, child: Text('10 m × 10 m')),

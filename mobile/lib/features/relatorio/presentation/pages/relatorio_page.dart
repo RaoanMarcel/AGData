@@ -1,6 +1,8 @@
+import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:printing/printing.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_dimens.dart';
@@ -105,10 +107,15 @@ class _RelatorioPageState extends State<RelatorioPage> {
       );
 
       if (!mounted) return;
-      await Printing.sharePdf(
-        bytes: pdfBytes,
-        filename:
-            'relatorio_fitossanitario_${DateTime.now().millisecondsSinceEpoch}.pdf',
+      final dir = await getTemporaryDirectory();
+      final ts = DateTime.now().millisecondsSinceEpoch;
+      final file = File('${dir.path}/relatorio_$ts.pdf');
+      await file.writeAsBytes(pdfBytes);
+
+      if (!mounted) return;
+      await Share.shareXFiles(
+        [XFile(file.path, mimeType: 'application/pdf')],
+        subject: 'Relatório Fitossanitário — $_empresaNome',
       );
     } catch (e) {
       if (mounted) {

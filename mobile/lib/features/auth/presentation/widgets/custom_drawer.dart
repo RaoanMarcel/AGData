@@ -35,117 +35,181 @@ class CustomDrawer extends StatelessWidget {
         children: [
           _DrawerHeader(user: user, isSuperAdmin: isSuperAdmin),
 
-          // OPÇÃO DE SINCRONIZAÇÃO
-          if (onSync != null)
-            ListTile(
-              leading: isSyncing
-                  ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Icon(Icons.sync, color: Colors.green),
-              title: const Text("Sincronizar Dados"),
-              onTap: isSyncing ? null : () {
-                Navigator.pop(context);
-                onSync!();
-              },
-            ),
+          // Itens de navegação roláveis — evita overflow em telas menores
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // OPÇÃO DE SINCRONIZAÇÃO
+                  if (onSync != null)
+                    ListTile(
+                      leading: isSyncing
+                          ? const SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(strokeWidth: 2))
+                          : const Icon(Icons.sync, color: Colors.green),
+                      title: const Text("Sincronizar Dados"),
+                      onTap: isSyncing
+                          ? null
+                          : () {
+                              Navigator.pop(context);
+                              onSync!();
+                            },
+                    ),
 
-          // NAVEGAÇÃO PRINCIPAL
-          const Divider(height: 1),
-          const Padding(
-            padding: EdgeInsets.only(left: 16, top: 10, bottom: 4),
-            child: Text(
-              "NAVEGAÇÃO",
-              style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold, fontSize: 12),
-            ),
-          ),
-          ListTile(
-            leading: const Icon(Icons.home_outlined, color: Color(0xFF2E7D32)),
-            title: const Text("Início"),
-            subtitle: const Text("Voltar para a tela principal"),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.center_focus_strong_outlined, color: Color(0xFF2E7D32)),
-            title: const Text("Nova Análise"),
-            subtitle: const Text("Selecionar talhão e diagnosticar"),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const SelecaoTalhaoScreen()));
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.history, color: Color(0xFF1565C0)),
-            title: const Text("Histórico"),
-            subtitle: const Text("Leituras e relatórios salvos"),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const HistoricoScreen()));
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.map_outlined, color: Color(0xFF6A1B9A)),
-            title: const Text("Mapa de Ocorrências"),
-            subtitle: const Text("Visualizar focos no campo"),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const MapaScreen()));
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.picture_as_pdf_outlined, color: Color(0xFFBF360C)),
-            title: const Text("Relatórios"),
-            subtitle: const Text("Gerar PDF fitossanitário"),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const RelatorioPage()));
-            },
-          ),
-
-          // ÁREA DE GESTÃO (FILTRADA POR ROLE)
-          if (temAcessoGestao) ...[
-            const Divider(),
-            const Padding(
-              padding: EdgeInsets.only(left: 16, top: 8, bottom: 4),
-              child: Text("ADMINISTRAÇÃO",
-                style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold, fontSize: 12)),
-            ),
-            ListTile(
-              leading: Icon(isSuperAdmin ? Icons.domain : Icons.people, color: Colors.blue),
-              title: Text(isSuperAdmin ? "Painel Global" : "Gerenciar Operadores"),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => isSuperAdmin ? const SuperAdminPage() : const AdminPage(),
+                  // NAVEGAÇÃO PRINCIPAL
+                  const Divider(height: 1),
+                  const Padding(
+                    padding: EdgeInsets.only(left: 16, top: 10, bottom: 4),
+                    child: Text(
+                      "NAVEGAÇÃO",
+                      style: TextStyle(
+                          color: Colors.grey,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12),
+                    ),
                   ),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.agriculture, color: Color(0xFF558B2F)),
-              title: const Text("Prescrição de Máquina"),
-              subtitle: const Text("Exportar mapa ISOBUS para pulverizador"),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(context,
-                    MaterialPageRoute(builder: (_) => const PrescricaoPage()));
-              },
-            ),
-          ],
+                  ListTile(
+                    leading: const Icon(Icons.home_outlined,
+                        color: Color(0xFF2E7D32)),
+                    title: const Text("Início"),
+                    subtitle: const Text("Voltar para a tela principal"),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.of(context)
+                          .pushNamedAndRemoveUntil('/', (route) => false);
+                    },
+                  ),
 
-          const Spacer(),
-          const Divider(),
-          
-          // BOTÃO DE SAIR UNIFICADO
+                  // Itens operacionais — apenas para admin e operador
+                  if (!isSuperAdmin) ...[
+                    ListTile(
+                      leading: const Icon(
+                          Icons.center_focus_strong_outlined,
+                          color: Color(0xFF2E7D32)),
+                      title: const Text("Nova Análise"),
+                      subtitle:
+                          const Text("Selecionar talhão e diagnosticar"),
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) =>
+                                    const SelecaoTalhaoScreen()));
+                      },
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.history,
+                          color: Color(0xFF1565C0)),
+                      title: const Text("Histórico"),
+                      subtitle:
+                          const Text("Leituras e relatórios salvos"),
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) =>
+                                    const HistoricoScreen()));
+                      },
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.map_outlined,
+                          color: Color(0xFF6A1B9A)),
+                      title: const Text("Mapa de Ocorrências"),
+                      subtitle:
+                          const Text("Visualizar focos no campo"),
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => const MapaScreen()));
+                      },
+                    ),
+                  ],
+
+                  ListTile(
+                    leading: const Icon(Icons.picture_as_pdf_outlined,
+                        color: Color(0xFFBF360C)),
+                    title: const Text("Relatórios"),
+                    subtitle: const Text("Gerar PDF fitossanitário"),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const RelatorioPage()));
+                    },
+                  ),
+
+                  // ÁREA DE GESTÃO (FILTRADA POR ROLE)
+                  if (temAcessoGestao) ...[
+                    const Divider(),
+                    const Padding(
+                      padding:
+                          EdgeInsets.only(left: 16, top: 8, bottom: 4),
+                      child: Text(
+                        "ADMINISTRAÇÃO",
+                        style: TextStyle(
+                            color: Colors.grey,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12),
+                      ),
+                    ),
+                    ListTile(
+                      leading: Icon(
+                          isSuperAdmin ? Icons.domain : Icons.people,
+                          color: Colors.blue),
+                      title: Text(isSuperAdmin
+                          ? "Painel Global"
+                          : "Gerenciar Operadores"),
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => isSuperAdmin
+                                ? const SuperAdminPage()
+                                : const AdminPage(),
+                          ),
+                        );
+                      },
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.agriculture,
+                          color: Color(0xFF558B2F)),
+                      title: const Text("Prescrição de Máquina"),
+                      subtitle: const Text(
+                          "Exportar mapa ISOBUS para pulverizador"),
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) =>
+                                    const PrescricaoPage()));
+                      },
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+
+          // BOTÃO DE SAIR — fixo na parte inferior
+          const Divider(height: 1),
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.red),
-            title: const Text("Sair da Conta", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+            title: const Text("Sair da Conta",
+                style: TextStyle(
+                    color: Colors.red, fontWeight: FontWeight.bold)),
             onTap: () => _confirmarSair(context),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 8),
         ],
       ),
     );

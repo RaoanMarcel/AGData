@@ -64,19 +64,20 @@ class IsobusService {
       });
 
       // Campo / Talhão
-      // D = PartfieldArea (m²), E = PartfieldAreaUnit (0 = m²)
+      // C = ClientNameIdRef, D = PartfieldArea (m²), E = PartfieldAreaUnit (0 = m²)
       final areaTotalM2 =
           (grade.nRows * grade.cellHeightDeg * 111000) *
           (grade.nCols * grade.cellWidthDeg * 111000);
       builder.element('PFD', attributes: {
         'A': 'PFD1',
         'B': talhaoNome,
+        'C': 'CTR1',
         'D': areaTotalM2.toInt().toString(),
         'E': '0',
         'F': 'FRM1',
       });
 
-      // Produto (C e D são opcionais e omitidos para evitar erros de validação)
+      // Produto
       builder.element('PDT', attributes: {
         'A': 'PDT1',
         'B': config.nomeProduto,
@@ -92,10 +93,16 @@ class IsobusService {
         'E': 'PFD1',
         'G': '1',
       }, nest: () {
+        // TZN: define o DDI 6 (Volume/Area Setpoint, resolução 0.01 ml/m²)
+        // Requerido pelo GridType 2 — referenciado em GRD.I
+        builder.element('TZN', attributes: {
+          'A': '1',
+          'B': config.nomeProduto,
+        });
+
         // GRD: Grade de prescrição (GridType 2 = valores diretos por célula)
         // A = latMin, B = lngMin, C = cellH, D = cellW,
-        // E = nCols-1 (índice máximo coluna), F = nRows-1 (índice máximo linha),
-        // G = nome do arquivo binário (sem extensão), H = GridType (2)
+        // E = nCols-1, F = nRows-1, G = arquivo binário, H = GridType, I = TZN code
         builder.element('GRD', attributes: {
           'A': grade.minLat.toStringAsFixed(8),
           'B': grade.minLng.toStringAsFixed(8),
@@ -105,6 +112,7 @@ class IsobusService {
           'F': (grade.nRows - 1).toString(),
           'G': 'GRD00001',
           'H': '2',
+          'I': '1',
         });
       });
     });
@@ -130,7 +138,8 @@ class IsobusService {
     for (int row = grade.nRows - 1; row >= 0; row--) {
       for (int col = 0; col < grade.nCols; col++) {
         final zona = grade.celulas[row][col];
-        final valor = (zona.taxa * 100).round(); // L/ha × 100
+        // DDI 6 (Volume/Area Setpoint): resolução 0,01 ml/m² → 1 L/ha = 10 unidades
+        final valor = (zona.taxa * 10).round();
         buffer.setInt32(offset, valor, Endian.little);
         offset += 4;
       }

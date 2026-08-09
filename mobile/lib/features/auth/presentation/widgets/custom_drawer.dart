@@ -78,11 +78,13 @@ class CustomDrawer extends StatelessWidget {
                     title: const Text("Início"),
                     subtitle: const Text("Voltar para a tela principal"),
                     onTap: () {
-                      Navigator.pop(context);
-                      final role = sl<SessionController>().usuario?.role;
-                      Navigator.of(context).pushAndRemoveUntil(
+                      // Captura navigator antes do pop para evitar context inválido.
+                      // Usa isAdmin calculado no build() — não re-lê a sessão no tap.
+                      final nav = Navigator.of(context);
+                      nav.pop();
+                      nav.pushAndRemoveUntil(
                         MaterialPageRoute(
-                          builder: (_) => role == UserRole.admin
+                          builder: (_) => isAdmin
                               ? const AdminPage()
                               : const HomeDashboardScreen(),
                         ),

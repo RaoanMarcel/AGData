@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../../../core/di/injection_container.dart';
+import '../../../../core/services/download_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_dimens.dart';
 import '../../../auth/presentation/controller/session_controller.dart';
@@ -107,17 +108,29 @@ class _RelatorioPageState extends State<RelatorioPage> {
       );
 
       if (!mounted) return;
-      final extDir = await getExternalStorageDirectory();
-      final dir = extDir ?? await getTemporaryDirectory();
       final ts = DateTime.now().millisecondsSinceEpoch;
       final fileName = 'relatorio_${_empresaNome.replaceAll(' ', '_')}_$ts.pdf';
+
+      // Tenta salvar em Downloads via MediaStore (Android 10+) ou diretamente (Android 9-)
+      final downloadPath = await DownloadService.saveToDownloads(
+        bytes: pdfBytes,
+        fileName: fileName,
+        mimeType: 'application/pdf',
+      );
+
+      // Fallback: armazenamento externo do app para usar no share sheet
+      final extDir = await getExternalStorageDirectory();
+      final dir = extDir ?? await getTemporaryDirectory();
       final file = File('${dir.path}/$fileName');
       await file.writeAsBytes(pdfBytes);
 
       if (!mounted) return;
+      final inDownloads = downloadPath != null;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('PDF salvo em: ${file.path}'),
+          content: Text(inDownloads
+              ? 'PDF salvo na pasta Downloads: $fileName'
+              : 'PDF salvo em: ${file.path}'),
           duration: const Duration(seconds: 6),
         ),
       );

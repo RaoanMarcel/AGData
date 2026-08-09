@@ -1,7 +1,9 @@
+import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
-import 'dart:io';
+import '../../../../core/services/download_service.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_dimens.dart';
@@ -149,22 +151,36 @@ class _PrescricaoPageState extends State<PrescricaoPage> {
         empresaNome: _empresaNome,
       );
 
-      final extDir = await getExternalStorageDirectory();
-      final dir = extDir ?? await getTemporaryDirectory();
       final ts = DateTime.now().millisecondsSinceEpoch;
       final fileName = 'prescricao_${(_talhaoSelected ?? 'talhao').replaceAll(' ', '_')}_$ts.zip';
-      final file = File('${dir.path}/$fileName');
-      await file.writeAsBytes(zipBytes);
+      final uint8Bytes = Uint8List.fromList(zipBytes);
+
+      // Tenta salvar em Downloads via MediaStore (Android 10+) ou diretamente (Android 9-)
+      final downloadPath = await DownloadService.saveToDownloads(
+        bytes: uint8Bytes,
+        fileName: fileName,
+        mimeType: 'application/zip',
+      );
+
+      // Fallback: armazenamento externo do app (acessível via gerenciador de arquivos)
+      final extDir = await getExternalStorageDirectory();
+      final dir = extDir ?? await getTemporaryDirectory();
+      final tempFile = File('${dir.path}/$fileName');
+      await tempFile.writeAsBytes(uint8Bytes);
 
       if (!mounted) return;
+      final savedPath = downloadPath ?? tempFile.path;
+      final inDownloads = downloadPath != null;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Arquivo salvo em: ${file.path}'),
+          content: Text(inDownloads
+              ? 'Salvo na pasta Downloads: $fileName'
+              : 'Salvo em: $savedPath'),
           duration: const Duration(seconds: 6),
         ),
       );
       await Share.shareXFiles(
-        [XFile(file.path, mimeType: 'application/zip')],
+        [XFile(tempFile.path, mimeType: 'application/zip')],
         subject: 'Prescrição ISOBUS — ${_talhaoSelected ?? ''}',
       );
     } catch (e) {

@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 // Imports baseados na sua estrutura de pastas
 import '../../../../core/di/injection_container.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../controller/session_controller.dart';
 import '../../data/models/auth_model.dart';
 import '../../data/repositories/auth_repository.dart';
@@ -161,8 +162,7 @@ class _AddUserPageState extends State<AddUserPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Novo Acesso"),
-        backgroundColor: const Color(0xFF1B5E20),
-        foregroundColor: Colors.white,
+        backgroundColor: AppColors.primaryDark,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),

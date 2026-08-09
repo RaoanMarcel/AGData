@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../../../core/theme/app_colors.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -230,9 +231,7 @@ class _SuperAdminPageState extends State<SuperAdminPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Painel Global HectarIA'),
-        backgroundColor: const Color(0xFF1B5E20),
-        foregroundColor: Colors.white,
-        elevation: 0,
+        backgroundColor: AppColors.primaryDark,
       ),
       // UTILIZANDO O SEU CUSTOM DRAWER AQUI
       drawer: const CustomDrawer(),
@@ -423,7 +422,6 @@ class _SuperAdminPageState extends State<SuperAdminPage> {
             final companyId = company['id'] ?? docs[index].id;
 
             return Card(
-              elevation: 2,
               margin: const EdgeInsets.symmetric(vertical: 6),
               child: ListTile(
                 leading: const CircleAvatar(

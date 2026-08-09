@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../controller/session_controller.dart';
@@ -82,11 +83,9 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text("Segurança"),
-        backgroundColor: const Color(0xFF1B5E20),
-        foregroundColor: Colors.white,
+        backgroundColor: AppColors.primaryDark,
         automaticallyImplyLeading: false,
         actions: [
           // Opção de sair caso o usuário não queira trocar a senha agora
@@ -102,7 +101,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
           children: [
             Container(
               width: double.infinity,
-              color: const Color(0xFF1B5E20),
+              color: AppColors.primaryDark,
               padding: const EdgeInsets.only(bottom: 32),
               child: const Column(
                 children: [

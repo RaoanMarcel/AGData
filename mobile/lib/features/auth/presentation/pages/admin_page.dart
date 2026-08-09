@@ -103,8 +103,6 @@ class _AdminPageState extends State<AdminPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Gestão de Operadores"),
-        backgroundColor: const Color(0xFF2E7D32),
-        foregroundColor: Colors.white,
       ),
       // Adicionado o Drawer que você criou
       drawer: const CustomDrawer(),
@@ -201,7 +199,6 @@ class _AdminPageState extends State<AdminPage> {
                     final isMe = user.uid == _session.usuario?.uid;
 
                     return Card(
-                      elevation: 2,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       child: ListTile(
                         leading: CircleAvatar(
@@ -244,9 +241,8 @@ class _AdminPageState extends State<AdminPage> {
           context,
           MaterialPageRoute(builder: (_) => const AddUserPage()),
         ),
-        backgroundColor: const Color(0xFF2E7D32),
-        label: const Text("NOVO OPERADOR", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        icon: const Icon(Icons.person_add, color: Colors.white),
+        label: const Text("NOVO OPERADOR", style: TextStyle(fontWeight: FontWeight.bold)),
+        icon: const Icon(Icons.person_add),
       ),
     );
   }

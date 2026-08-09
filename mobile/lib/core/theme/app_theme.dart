@@ -11,9 +11,6 @@ import 'app_typography.dart';
 class AppTheme {
   AppTheme._();
 
-  /// Mantido por compatibilidade com referências antigas. Prefira AppColors.primary.
-  static const Color corPrimaria = AppColors.primary;
-
   static ThemeData get lightTheme {
     const colorScheme = ColorScheme.light(
       primary: AppColors.primary,

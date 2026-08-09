@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/di/injection_container.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../data/repositories/auth_repository.dart';
 
 class ForgotPasswordPage extends StatefulWidget {
@@ -65,8 +66,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Recuperar Senha"),
-        backgroundColor: const Color(0xFF1B5E20),
-        foregroundColor: Colors.white,
+        backgroundColor: AppColors.primaryDark,
       ),
       body: Padding(
         padding: const EdgeInsets.all(24.0),
@@ -94,12 +94,13 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
                 decoration: const InputDecoration(
-                  labelText: "E-mail cadastrado",
-                  border: OutlineInputBorder(),
+                  labelText: "E-mail cadastrado *",
                   prefixIcon: Icon(Icons.email_outlined),
                 ),
-                validator: (v) =>
-                    (v == null || !v.contains('@')) ? "E-mail inválido" : null,
+                validator: (v) => (v == null ||
+                        !RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(v))
+                    ? "E-mail inválido"
+                    : null,
               ),
               const SizedBox(height: 24),
               SizedBox(
@@ -115,7 +116,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                   child: _isLoading
                       ? const CircularProgressIndicator(color: Colors.white)
                       : const Text(
-                          "ENVIAR E-MAIL DE RECUPERAÇÃO",
+                          "ENVIAR LINK",
                           style: TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,

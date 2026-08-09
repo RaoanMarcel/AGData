@@ -272,7 +272,7 @@ class _AddUserPageState extends State<AddUserPage> {
                         child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
                       )
                     : const Text(
-                        "CADASTRAR E GERAR ACESSO", 
+                        "CADASTRAR",
                         style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                       ),
                 ),

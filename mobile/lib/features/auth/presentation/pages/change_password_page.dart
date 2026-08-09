@@ -179,7 +179,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                         child: _carregando
                             ? const CircularProgressIndicator(color: Colors.white)
                             : const Text(
-                                "SALVAR E ACESSAR",
+                                "SALVAR",
                                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                               ),
                       ),

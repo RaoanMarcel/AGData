@@ -179,7 +179,7 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     child: _carregando 
                       ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text("ENTRAR NO SISTEMA", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      : const Text("ENTRAR", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                   ),
                 ),
                 

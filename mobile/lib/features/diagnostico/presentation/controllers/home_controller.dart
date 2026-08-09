@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -80,7 +81,9 @@ class HomeController extends ChangeNotifier {
 
   Future<void> _processar(File image, String talhao, ImageSource source) async {
     try {
-      final Map<String, dynamic> resultadoIA = await _classifier.predict(image);
+      final Map<String, dynamic> resultadoIA = await _classifier
+          .predict(image)
+          .timeout(const Duration(seconds: 30));
       final String nomeFinal = resultadoIA['label'] ?? "Erro";
       final double confiancaIA = resultadoIA['confidence'] ?? 0.0;
 
@@ -130,6 +133,9 @@ class HomeController extends ChangeNotifier {
           "📍 ${lat.toStringAsFixed(4)}, ${lng.toStringAsFixed(4)}";
       _status = DiagnosticoStatus.revisao;
       notifyListeners();
+    } on TimeoutException {
+      _falhar('TEMPO ESGOTADO',
+          'O processamento demorou mais que o esperado. Tente novamente.');
     } catch (e) {
       debugPrint("ERRO NO HOME_CONTROLLER: $e");
       _falhar('ERRO NA ANÁLISE', 'Não foi possível processar a imagem.');

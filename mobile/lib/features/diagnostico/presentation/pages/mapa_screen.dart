@@ -223,6 +223,34 @@ class _MapaScreenState extends State<MapaScreen> {
                   ),
                   if (_controller.contagemDoenca.isNotEmpty)
                     _Legenda(contagem: _controller.contagemDoenca),
+                  if (_controller.totalVisiveis == 0)
+                    Positioned(
+                      top: 66,
+                      left: AppSpacing.lg,
+                      right: AppSpacing.lg,
+                      child: Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(AppSpacing.lg),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.location_off_outlined,
+                                  color: AppColors.textTertiary, size: 20),
+                              const SizedBox(width: AppSpacing.md),
+                              Expanded(
+                                child: Text(
+                                  'Nenhuma ocorrência no filtro atual. '
+                                  'Ajuste os filtros ou registre novas leituras com GPS.',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.copyWith(color: AppColors.textSecondary),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
                 ],
               );
             },

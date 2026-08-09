@@ -126,17 +126,24 @@ class _RelatorioPageState extends State<RelatorioPage> {
 
       if (!mounted) return;
       final inDownloads = downloadPath != null;
+      final filePath = file.path;
+      final empresaNome = _empresaNome;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(inDownloads
               ? 'PDF salvo na pasta Downloads: $fileName'
-              : 'PDF salvo em: ${file.path}'),
-          duration: const Duration(seconds: 6),
+              : 'PDF gerado com sucesso.'),
+          duration: const Duration(seconds: 8),
+          action: SnackBarAction(
+            label: 'COMPARTILHAR',
+            onPressed: () async {
+              await Share.shareXFiles(
+                [XFile(filePath, mimeType: 'application/pdf')],
+                subject: 'Relatório Fitossanitário — $empresaNome',
+              );
+            },
+          ),
         ),
-      );
-      await Share.shareXFiles(
-        [XFile(file.path, mimeType: 'application/pdf')],
-        subject: 'Relatório Fitossanitário — $_empresaNome',
       );
     } catch (e) {
       if (mounted) {
@@ -222,39 +229,64 @@ class _RelatorioPageState extends State<RelatorioPage> {
                         ),
                       ),
                       const SizedBox(height: AppSpacing.lg),
-                      _SecaoCard(
-                        titulo:
-                            'Talhões (${_talhoesSelected.isEmpty ? 'todos' : _talhoesSelected.length} selecionado(s))',
-                        child: _talhoes.isEmpty
-                            ? const Padding(
-                                padding: EdgeInsets.all(8),
-                                child: Text('Nenhum talhão cadastrado.'),
-                              )
-                            : Column(
-                                children: _talhoes
-                                    .map((t) => t.nome)
-                                    .toSet()
-                                    .map((nome) {
-                                  final sel =
-                                      _talhoesSelected.contains(nome);
-                                  return CheckboxListTile(
-                                    dense: true,
-                                    title: Text(nome),
-                                    value: sel,
-                                    activeColor: AppColors.primary,
-                                    onChanged: (v) {
-                                      setState(() {
-                                        if (v == true) {
-                                          _talhoesSelected.add(nome);
-                                        } else {
-                                          _talhoesSelected.remove(nome);
-                                        }
-                                      });
-                                    },
-                                  );
-                                }).toList(),
-                              ),
-                      ),
+                      Builder(builder: (context) {
+                        final nomesTalhoes =
+                            _talhoes.map((t) => t.nome).toSet().toList();
+                        final todosSelecionados = nomesTalhoes.isNotEmpty &&
+                            _talhoesSelected.containsAll(nomesTalhoes);
+                        return _SecaoCard(
+                          titulo:
+                              'Talhões (${_talhoesSelected.isEmpty ? 'todos' : _talhoesSelected.length} selecionado(s))',
+                          child: _talhoes.isEmpty
+                              ? const Padding(
+                                  padding: EdgeInsets.all(8),
+                                  child: Text('Nenhum talhão cadastrado.'),
+                                )
+                              : Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    Align(
+                                      alignment: Alignment.centerRight,
+                                      child: TextButton(
+                                        onPressed: () {
+                                          setState(() {
+                                            if (todosSelecionados) {
+                                              _talhoesSelected.clear();
+                                            } else {
+                                              _talhoesSelected
+                                                  .addAll(nomesTalhoes);
+                                            }
+                                          });
+                                        },
+                                        child: Text(todosSelecionados
+                                            ? 'Desmarcar todos'
+                                            : 'Selecionar todos'),
+                                      ),
+                                    ),
+                                    ...nomesTalhoes.map((nome) {
+                                      final sel =
+                                          _talhoesSelected.contains(nome);
+                                      return CheckboxListTile(
+                                        dense: true,
+                                        title: Text(nome),
+                                        value: sel,
+                                        activeColor: AppColors.primary,
+                                        onChanged: (v) {
+                                          setState(() {
+                                            if (v == true) {
+                                              _talhoesSelected.add(nome);
+                                            } else {
+                                              _talhoesSelected.remove(nome);
+                                            }
+                                          });
+                                        },
+                                      );
+                                    }),
+                                  ],
+                                ),
+                        );
+                      }),
                       const SizedBox(height: AppSpacing.lg),
                       _SecaoCard(
                         titulo: 'Prévia do Mapa',

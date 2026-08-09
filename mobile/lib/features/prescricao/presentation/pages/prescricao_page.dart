@@ -361,24 +361,42 @@ class _PrescricaoPageState extends State<PrescricaoPage> {
                         AppSpacing.md,
                         AppSpacing.xl,
                         AppSpacing.lg),
-                    child: SizedBox(
-                      width: double.infinity,
-                      height: 52,
-                      child: ElevatedButton.icon(
-                        onPressed:
-                            _exportando || _grade == null ? null : _exportar,
-                        icon: _exportando
-                            ? const SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(
-                                    strokeWidth: 2, color: Colors.white),
-                              )
-                            : const Icon(Icons.agriculture),
-                        label: Text(_exportando
-                            ? 'Gerando arquivo...'
-                            : 'Exportar ZIP (ISOBUS)'),
-                      ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (_grade == null)
+                          Padding(
+                            padding:
+                                const EdgeInsets.only(bottom: AppSpacing.sm),
+                            child: Text(
+                              'Selecione um talhão com leituras GPS para habilitar a exportação.',
+                              textAlign: TextAlign.center,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(color: AppColors.textTertiary),
+                            ),
+                          ),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 52,
+                          child: ElevatedButton.icon(
+                            onPressed:
+                                _exportando || _grade == null ? null : _exportar,
+                            icon: _exportando
+                                ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2, color: Colors.white),
+                                  )
+                                : const Icon(Icons.agriculture),
+                            label: Text(_exportando
+                                ? 'Gerando arquivo...'
+                                : 'Exportar ZIP (ISOBUS)'),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -560,6 +578,8 @@ class _EstatisticasGrade extends StatelessWidget {
     final prev = zonas.where((z) => z.nivel == 1).length;
     final curat = zonas.where((z) => z.nivel == 2).length;
     final total = zonas.length;
+    final comLeituras = prev + curat;
+    final cobertura = total > 0 ? comLeituras / total * 100 : 0.0;
 
     return Card(
       child: Padding(
@@ -576,6 +596,45 @@ class _EstatisticasGrade extends StatelessWidget {
                 prev, total, config.taxaPreventiva),
             _linha(context, AppColors.ferrugem, 'Curativo',
                 curat, total, config.taxaCurativa),
+            const Divider(height: 16),
+            Row(
+              children: [
+                Icon(
+                  cobertura >= 30
+                      ? Icons.gps_fixed
+                      : Icons.gps_not_fixed,
+                  size: 14,
+                  color: cobertura >= 30
+                      ? AppColors.saudavel
+                      : AppColors.syncPending,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'Cobertura GPS: ${cobertura.toStringAsFixed(0)}% das células ($comLeituras c/ leituras)',
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                ),
+              ],
+            ),
+            if (cobertura < 30) ...[
+              const SizedBox(height: 6),
+              const Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.warning_amber,
+                      color: AppColors.syncPending, size: 14),
+                  SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'Cobertura baixa. Registre mais leituras no campo para melhorar a precisão da prescrição.',
+                      style: TextStyle(
+                          fontSize: 11, color: AppColors.textSecondary),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ],
         ),
       ),

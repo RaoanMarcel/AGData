@@ -121,7 +121,7 @@ class _LoginPageState extends State<LoginPage> {
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                     prefixIcon: const Icon(Icons.email_outlined),
                   ),
-                  validator: (v) => (v == null || !v.contains('@')) ? "Insira um e-mail válido" : null,
+                  validator: (v) => (v == null || !RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(v)) ? "Insira um e-mail válido" : null,
                 ),
                 const SizedBox(height: 20),
 

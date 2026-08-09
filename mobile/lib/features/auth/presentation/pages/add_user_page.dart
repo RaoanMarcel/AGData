@@ -196,7 +196,7 @@ class _AddUserPageState extends State<AddUserPage> {
                   prefixIcon: Icon(Icons.alternate_email),
                 ),
                 keyboardType: TextInputType.emailAddress,
-                validator: (v) => (v == null || !v.contains("@")) ? "E-mail inválido" : null,
+                validator: (v) => (v == null || !RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(v)) ? "E-mail inválido" : null,
               ),
               const SizedBox(height: 16),
               

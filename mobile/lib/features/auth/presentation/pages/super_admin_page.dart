@@ -320,7 +320,9 @@ class _SuperAdminPageState extends State<SuperAdminPage> {
             ),
             keyboardType: TextInputType.emailAddress,
             validator: (v) =>
-                (v == null || !v.contains('@')) ? 'E-mail inválido' : null,
+                (v == null || !RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(v))
+                    ? 'E-mail inválido'
+                    : null,
           ),
           const SizedBox(height: 10),
           TextFormField(

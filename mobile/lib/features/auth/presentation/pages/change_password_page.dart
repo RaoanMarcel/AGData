@@ -17,6 +17,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
 
   bool _carregando = false;
   bool _senhaVisivel = false;
+  bool _confirmarVisivel = false;
 
   final _authRepo = sl<AuthRepository>();
   final _session = sl<SessionController>();
@@ -134,7 +135,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                       keyboardType: TextInputType.visiblePassword,
                       decoration: InputDecoration(
                         labelText: "Nova Senha",
-                        hintText: "Mínimo 6 dígitos",
+                        hintText: "Mínimo 6 caracteres",
                         prefixIcon: const Icon(Icons.vpn_key_outlined),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                         suffixIcon: IconButton(
@@ -144,17 +145,21 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                       ),
                       validator: (v) => (v == null || v.length < 6) ? "Senha muito curta" : null,
                     ),
-                    
+
                     const SizedBox(height: 20),
-                    
+
                     TextFormField(
                       controller: _confirmarSenhaController,
-                      obscureText: !_senhaVisivel,
+                      obscureText: !_confirmarVisivel,
                       keyboardType: TextInputType.visiblePassword,
                       decoration: InputDecoration(
                         labelText: "Confirmar Senha",
                         prefixIcon: const Icon(Icons.lock_outline),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        suffixIcon: IconButton(
+                          icon: Icon(_confirmarVisivel ? Icons.visibility : Icons.visibility_off),
+                          onPressed: () => setState(() => _confirmarVisivel = !_confirmarVisivel),
+                        ),
                       ),
                       validator: (v) {
                         if (v != _novaSenhaController.text) return "As senhas não coincidem";

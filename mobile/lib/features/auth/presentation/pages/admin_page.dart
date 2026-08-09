@@ -21,6 +21,7 @@ class _AdminPageState extends State<AdminPage> {
   final _session = sl<SessionController>();
   final _firestore = FirebaseFirestore.instance;
   late Future<String> _companyNameFuture;
+  String _searchQuery = '';
 
   @override
   void initState() {
@@ -142,6 +143,20 @@ class _AdminPageState extends State<AdminPage> {
               );
             },
           ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+            child: TextField(
+              decoration: const InputDecoration(
+                hintText: 'Buscar por nome ou e-mail...',
+                prefixIcon: Icon(Icons.search),
+                isDense: true,
+                border: OutlineInputBorder(),
+                contentPadding:
+                    EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+              ),
+              onChanged: (v) => setState(() => _searchQuery = v.toLowerCase()),
+            ),
+          ),
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: _firestore
@@ -154,10 +169,27 @@ class _AdminPageState extends State<AdminPage> {
                   return const Center(child: CircularProgressIndicator());
                 }
 
-                final docs = snapshot.data!.docs;
+                final allDocs = snapshot.data!.docs;
+                final docs = _searchQuery.isEmpty
+                    ? allDocs
+                    : allDocs.where((doc) {
+                        final user = UserModel.fromMap(
+                            doc.data() as Map<String, dynamic>);
+                        return user.name
+                                .toLowerCase()
+                                .contains(_searchQuery) ||
+                            user.email
+                                .toLowerCase()
+                                .contains(_searchQuery);
+                      }).toList();
+
+                if (allDocs.isEmpty) {
+                  return const Center(child: Text("Nenhum operador cadastrado."));
+                }
 
                 if (docs.isEmpty) {
-                  return const Center(child: Text("Nenhum operador cadastrado."));
+                  return const Center(
+                      child: Text("Nenhum resultado para a busca."));
                 }
 
                 return ListView.separated(

@@ -58,18 +58,30 @@ class _PrescricaoPageState extends State<PrescricaoPage> {
     _todasLeituras = await _db.buscarTodasLeituras();
     final session = sl<SessionController>();
     _empresaNome = session.usuario?.name ?? 'AGData';
-    if (_talhoes.isNotEmpty) {
-      _talhaoSelected = _talhoes.first.nome;
+    final nomes = _uniqueTalhaoNames;
+    if (nomes.isNotEmpty) {
+      _talhaoSelected = nomes.first;
       _recalcularGrade();
     }
     if (mounted) setState(() => _loading = false);
   }
 
-  // Garante que o valor do dropdown de talhão sempre existe na lista de itens
+  // Nomes únicos de talhão — evita itens duplicados no DropdownButton
+  // (duplicatas podem ocorrer por sincronizações sobrepostas no Isar)
+  List<String> get _uniqueTalhaoNames {
+    final seen = <String>{};
+    return _talhoes
+        .map((t) => t.nome)
+        .where(seen.add)
+        .toList();
+  }
+
+  // Garante que o valor do dropdown sempre existe entre os itens únicos
   String? get _safeSelected {
     if (_talhaoSelected == null) return null;
-    if (_talhoes.any((t) => t.nome == _talhaoSelected)) return _talhaoSelected;
-    return _talhoes.isNotEmpty ? _talhoes.first.nome : null;
+    final nomes = _uniqueTalhaoNames;
+    if (nomes.contains(_talhaoSelected)) return _talhaoSelected;
+    return nomes.isNotEmpty ? nomes.first : null;
   }
 
   // Garante que o tamanho de célula é sempre um dos valores válidos
@@ -203,9 +215,9 @@ class _PrescricaoPageState extends State<PrescricaoPage> {
                             underline: const SizedBox(),
                             value: _safeSelected,
                             hint: const Text('Selecionar talhão'),
-                            items: _talhoes
-                                .map((t) => DropdownMenuItem(
-                                    value: t.nome, child: Text(t.nome)))
+                            items: _uniqueTalhaoNames
+                                .map((nome) => DropdownMenuItem(
+                                    value: nome, child: Text(nome)))
                                 .toList(),
                             onChanged: (v) {
                               setState(() => _talhaoSelected = v);

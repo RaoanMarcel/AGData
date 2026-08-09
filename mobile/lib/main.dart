@@ -143,11 +143,11 @@ class _AuthWrapperState extends State<AuthWrapper> {
       final Widget dest;
       if (usuario.needsPasswordChange) {
         dest = const ChangePasswordPage(key: ValueKey('change-pw'));
-      } else if (usuario.role == UserRole.superAdmin) {
-        dest = const SuperAdminPage(key: ValueKey('super-admin'));
       } else if (usuario.role == UserRole.admin) {
         dest = const AdminPage(key: ValueKey('admin'));
       } else {
+        // superAdmin e operador usam a mesma home; superAdmin acessa
+        // a gestão de empresas via "Painel Global" no drawer lateral.
         dest = const HomeDashboardScreen(key: ValueKey('home'));
       }
 

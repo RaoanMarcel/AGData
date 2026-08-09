@@ -210,20 +210,23 @@ class _RelatorioPageState extends State<RelatorioPage> {
                                 child: Text('Nenhum talhão cadastrado.'),
                               )
                             : Column(
-                                children: _talhoes.map((t) {
+                                children: _talhoes
+                                    .map((t) => t.nome)
+                                    .toSet()
+                                    .map((nome) {
                                   final sel =
-                                      _talhoesSelected.contains(t.nome);
+                                      _talhoesSelected.contains(nome);
                                   return CheckboxListTile(
                                     dense: true,
-                                    title: Text(t.nome),
+                                    title: Text(nome),
                                     value: sel,
                                     activeColor: AppColors.primary,
                                     onChanged: (v) {
                                       setState(() {
                                         if (v == true) {
-                                          _talhoesSelected.add(t.nome);
+                                          _talhoesSelected.add(nome);
                                         } else {
-                                          _talhoesSelected.remove(t.nome);
+                                          _talhoesSelected.remove(nome);
                                         }
                                       });
                                     },

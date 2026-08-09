@@ -180,8 +180,7 @@ class _AddUserPageState extends State<AddUserPage> {
               TextFormField(
                 controller: _nomeController,
                 decoration: const InputDecoration(
-                  labelText: "Nome Completo", 
-                  border: OutlineInputBorder(),
+                  labelText: "Nome Completo *",
                   prefixIcon: Icon(Icons.person_outline),
                 ),
                 validator: (v) => (v == null || v.isEmpty) ? "Informe o nome" : null,
@@ -191,8 +190,7 @@ class _AddUserPageState extends State<AddUserPage> {
               TextFormField(
                 controller: _emailController,
                 decoration: const InputDecoration(
-                  labelText: "E-mail de Login", 
-                  border: OutlineInputBorder(),
+                  labelText: "E-mail de Login *",
                   prefixIcon: Icon(Icons.alternate_email),
                 ),
                 keyboardType: TextInputType.emailAddress,
@@ -204,8 +202,7 @@ class _AddUserPageState extends State<AddUserPage> {
                 controller: _phoneController,
                 inputFormatters: [_phoneFormatter],
                 decoration: const InputDecoration(
-                  labelText: "WhatsApp", 
-                  border: OutlineInputBorder(),
+                  labelText: "WhatsApp *",
                   hintText: "(00) 00000-0000",
                   prefixIcon: Icon(Icons.phone_iphone),
                 ),
@@ -217,8 +214,7 @@ class _AddUserPageState extends State<AddUserPage> {
               DropdownButtonFormField<UserRole>(
                 value: _roleSelecionada,
                 decoration: const InputDecoration(
-                  labelText: "Nível de Acesso", 
-                  border: OutlineInputBorder(),
+                  labelText: "Nível de Acesso",
                   prefixIcon: Icon(Icons.shield_outlined),
                 ),
                 items: const [

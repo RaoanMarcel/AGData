@@ -133,10 +133,9 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                       obscureText: !_senhaVisivel,
                       keyboardType: TextInputType.visiblePassword,
                       decoration: InputDecoration(
-                        labelText: "Nova Senha",
+                        labelText: "Nova Senha *",
                         hintText: "Mínimo 6 caracteres",
                         prefixIcon: const Icon(Icons.vpn_key_outlined),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                         suffixIcon: IconButton(
                           icon: Icon(_senhaVisivel ? Icons.visibility : Icons.visibility_off),
                           onPressed: () => setState(() => _senhaVisivel = !_senhaVisivel),
@@ -152,9 +151,8 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                       obscureText: !_confirmarVisivel,
                       keyboardType: TextInputType.visiblePassword,
                       decoration: InputDecoration(
-                        labelText: "Confirmar Senha",
+                        labelText: "Confirmar Senha *",
                         prefixIcon: const Icon(Icons.lock_outline),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                         suffixIcon: IconButton(
                           icon: Icon(_confirmarVisivel ? Icons.visibility : Icons.visibility_off),
                           onPressed: () => setState(() => _confirmarVisivel = !_confirmarVisivel),

@@ -115,11 +115,10 @@ class _LoginPageState extends State<LoginPage> {
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
-                  decoration: InputDecoration(
-                    labelText: "E-mail",
+                  decoration: const InputDecoration(
+                    labelText: "E-mail *",
                     hintText: "seu@email.com",
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                    prefixIcon: const Icon(Icons.email_outlined),
+                    prefixIcon: Icon(Icons.email_outlined),
                   ),
                   validator: (v) => (v == null || !RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(v)) ? "Insira um e-mail válido" : null,
                 ),
@@ -131,8 +130,7 @@ class _LoginPageState extends State<LoginPage> {
                   textInputAction: TextInputAction.done,
                   onFieldSubmitted: (_) => _fazerLogin(),
                   decoration: InputDecoration(
-                    labelText: "Senha",
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    labelText: "Senha *",
                     prefixIcon: const Icon(Icons.lock_outline),
                     suffixIcon: IconButton(
                       icon: Icon(_senhaVisivel ? Icons.visibility : Icons.visibility_off),

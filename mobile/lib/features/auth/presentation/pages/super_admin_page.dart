@@ -269,8 +269,7 @@ class _SuperAdminPageState extends State<SuperAdminPage> {
           TextFormField(
             controller: _nomeEmpresaController,
             decoration: const InputDecoration(
-              labelText: 'Nome da Empresa',
-              border: OutlineInputBorder(),
+              labelText: 'Nome da Empresa *',
               prefixIcon: Icon(Icons.business),
             ),
             validator: (v) =>
@@ -282,7 +281,6 @@ class _SuperAdminPageState extends State<SuperAdminPage> {
             inputFormatters: [_cnpjFormatter],
             decoration: const InputDecoration(
               labelText: 'CNPJ',
-              border: OutlineInputBorder(),
               prefixIcon: Icon(Icons.assignment_ind),
             ),
             keyboardType: TextInputType.number,
@@ -301,8 +299,7 @@ class _SuperAdminPageState extends State<SuperAdminPage> {
           TextFormField(
             controller: _nomeAdminController,
             decoration: const InputDecoration(
-              labelText: 'Nome Completo',
-              border: OutlineInputBorder(),
+              labelText: 'Nome Completo *',
               prefixIcon: Icon(Icons.person_outline),
             ),
             validator: (v) => (v == null || v.isEmpty)
@@ -313,8 +310,7 @@ class _SuperAdminPageState extends State<SuperAdminPage> {
           TextFormField(
             controller: _emailAdminController,
             decoration: const InputDecoration(
-              labelText: 'E-mail de Login',
-              border: OutlineInputBorder(),
+              labelText: 'E-mail de Login *',
               prefixIcon: Icon(Icons.alternate_email),
             ),
             keyboardType: TextInputType.emailAddress,
@@ -328,8 +324,7 @@ class _SuperAdminPageState extends State<SuperAdminPage> {
             controller: _phoneAdminController,
             inputFormatters: [_phoneFormatter],
             decoration: const InputDecoration(
-              labelText: 'WhatsApp',
-              border: OutlineInputBorder(),
+              labelText: 'WhatsApp *',
               hintText: '(00) 00000-0000',
               prefixIcon: Icon(Icons.phone_iphone),
             ),
@@ -343,7 +338,6 @@ class _SuperAdminPageState extends State<SuperAdminPage> {
             inputFormatters: [_cpfFormatter],
             decoration: const InputDecoration(
               labelText: 'CPF',
-              border: OutlineInputBorder(),
               prefixIcon: Icon(Icons.badge_outlined),
             ),
             keyboardType: TextInputType.number,

@@ -188,7 +188,9 @@ class CustomDrawer extends StatelessWidget {
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () async {
               Navigator.pop(context);
-              await sl<AuthRepository>().logout();
+              try {
+                await sl<AuthRepository>().logout();
+              } catch (_) {}
               if (context.mounted) {
                 Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
               }

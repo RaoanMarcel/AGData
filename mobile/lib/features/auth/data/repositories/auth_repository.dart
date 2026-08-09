@@ -90,16 +90,12 @@ class AuthRepository {
     return null;
   }
 
-  /// Logout atualizado para garantir limpeza total
   Future<void> logout() async {
     try {
-      // Limpa a sessão no controller primeiro para atualizar a UI imediatamente
       sl<SessionController>().limparSessao();
-      // Desloga do Firebase
       await _auth.signOut();
     } catch (e) {
       debugPrint("Erro durante o logout: $e");
-      rethrow;
     }
   }
 }

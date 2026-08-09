@@ -102,72 +102,85 @@ void _dispararSincronizacaoAutomatica() async {
   }
 }
 
-class AuthWrapper extends StatelessWidget {
+class AuthWrapper extends StatefulWidget {
   const AuthWrapper({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return StreamBuilder<User?>(
-      stream: FirebaseAuth.instance.authStateChanges(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator(color: Colors.green)),
-          );
-        }
+  State<AuthWrapper> createState() => _AuthWrapperState();
+}
 
-        if (!snapshot.hasData || snapshot.data == null) {
-          return const LoginPage();
-        }
+class _AuthWrapperState extends State<AuthWrapper> {
+  Widget _page = const _SplashScreen(key: ValueKey('splash'));
 
-        return FutureBuilder<bool>(
-          future: _inicializarSessaoReal(snapshot.data!.uid),
-          builder: (context, sessionSnapshot) {
-            if (sessionSnapshot.connectionState == ConnectionState.waiting) {
-              return const Scaffold(
-                body: Center(child: CircularProgressIndicator(color: Colors.green)),
-              );
-            }
-
-            if (sessionSnapshot.data == false) {
-              return const LoginPage();
-            }
-
-            final session = sl<SessionController>();
-            final usuario = session.usuario;
-
-            if (usuario != null && usuario.needsPasswordChange) {
-              return const ChangePasswordPage();
-            }
-
-            if (usuario?.role == UserRole.superAdmin) {
-              return const SuperAdminPage();
-            } else if (usuario?.role == UserRole.admin) {
-              return const AdminPage();
-            } else {
-              return const HomeDashboardScreen();
-            }
-          },
-        );
-      },
-    );
+  @override
+  void initState() {
+    super.initState();
+    FirebaseAuth.instance.authStateChanges().listen(_onAuthChanged);
   }
 
-  Future<bool> _inicializarSessaoReal(String uid) async {
-    final session = sl<SessionController>();
+  Future<void> _onAuthChanged(User? user) async {
+    if (!mounted) return;
+
+    if (user == null) {
+      setState(() => _page = const LoginPage(key: ValueKey('login')));
+      return;
+    }
+
+    setState(() => _page = const _SplashScreen(key: ValueKey('splash')));
+
     try {
-      if (session.usuario != null) return true;
-      await session.inicializarUsuario();
-      if (session.usuario == null) {
+      final session = sl<SessionController>();
+      if (session.usuario == null) await session.inicializarUsuario();
+
+      if (!mounted) return;
+
+      final usuario = session.usuario;
+      if (usuario == null) {
         await FirebaseAuth.instance.signOut();
-        return false;
+        return;
       }
-      return true;
+
+      final Widget dest;
+      if (usuario.needsPasswordChange) {
+        dest = const ChangePasswordPage(key: ValueKey('change-pw'));
+      } else if (usuario.role == UserRole.superAdmin) {
+        dest = const SuperAdminPage(key: ValueKey('super-admin'));
+      } else if (usuario.role == UserRole.admin) {
+        dest = const AdminPage(key: ValueKey('admin'));
+      } else {
+        dest = const HomeDashboardScreen(key: ValueKey('home'));
+      }
+
+      if (mounted) setState(() => _page = dest);
     } catch (e) {
       debugPrint("Erro fatal na carga da sessão: $e");
       await FirebaseAuth.instance.signOut();
-      return false;
     }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 450),
+      switchInCurve: Curves.easeOut,
+      switchOutCurve: Curves.easeIn,
+      transitionBuilder: (child, animation) => FadeTransition(
+        opacity: animation,
+        child: child,
+      ),
+      child: _page,
+    );
+  }
+}
+
+class _SplashScreen extends StatelessWidget {
+  const _SplashScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(child: CircularProgressIndicator(color: Colors.green)),
+    );
   }
 }
 

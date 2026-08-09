@@ -189,6 +189,14 @@ class AppTheme {
       progressIndicatorTheme: const ProgressIndicatorThemeData(
         color: AppColors.primary,
       ),
+
+      // ----- Transições de página (slide estilo iOS em todas as plataformas) -----
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+          TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+        },
+      ),
     );
   }
 }

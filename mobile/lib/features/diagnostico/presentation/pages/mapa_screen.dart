@@ -56,7 +56,16 @@ class _MapaScreenState extends State<MapaScreen> {
       context: context,
       isScrollControlled: true,
       builder: (context) {
-        String? tempTalhao = _controller.filtroTalhao;
+        // Nomes únicos — DropdownButton requer valores distintos.
+        final nomesUnicos = _controller.talhoes
+            .map((t) => t.nome)
+            .toSet()
+            .toList()
+          ..sort();
+
+        String? tempTalhao = nomesUnicos.contains(_controller.filtroTalhao)
+            ? _controller.filtroTalhao
+            : null;
         String? tempDoenca = _controller.filtroDoenca;
         DateTime? tempInicio = _controller.dataInicio;
         DateTime? tempFim = _controller.dataFim;
@@ -87,8 +96,8 @@ class _MapaScreenState extends State<MapaScreen> {
                     hint: const Text("Todos os talhões"),
                     items: [
                       const DropdownMenuItem(value: null, child: Text("Todos")),
-                      ..._controller.talhoes.map((t) =>
-                          DropdownMenuItem(value: t.nome, child: Text(t.nome)))
+                      ...nomesUnicos.map((nome) =>
+                          DropdownMenuItem(value: nome, child: Text(nome))),
                     ],
                     onChanged: (val) => setModalState(() => tempTalhao = val),
                   ),

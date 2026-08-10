@@ -4,6 +4,7 @@ import '../../../../core/theme/app_dimens.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/empty_state.dart';
+import '../../data/models/talhao_model.dart';
 import '../controllers/selecao_talhao_controller.dart';
 import '../widgets/sync_status_button.dart';
 import 'home_screen.dart';
@@ -25,11 +26,12 @@ class _SelecaoTalhaoScreenState extends State<SelecaoTalhaoScreen> {
 
   @override
   void dispose() {
+    _controller.dispose();
     _buscaController.dispose();
     super.dispose();
   }
 
-  List<dynamic> get _talhoesFiltrados {
+  List<TalhaoModel> get _talhoesFiltrados {
     var lista = _controller.talhoes.where((t) {
       return _busca.isEmpty ||
           t.nome.toLowerCase().contains(_busca.toLowerCase());

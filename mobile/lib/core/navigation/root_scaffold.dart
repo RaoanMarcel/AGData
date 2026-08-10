@@ -10,6 +10,7 @@ import '../../../features/diagnostico/presentation/pages/mapa_screen.dart';
 import '../../../features/diagnostico/presentation/pages/selecao_talhao_screen.dart';
 import '../../../features/relatorio/presentation/pages/relatorio_page.dart';
 import '../../../features/prescricao/presentation/pages/prescricao_page.dart';
+import '../../../features/settings/presentation/pages/settings_page.dart';
 import '../di/injection_container.dart';
 
 class RootScaffold extends StatefulWidget {
@@ -193,6 +194,17 @@ class _RootScaffoldState extends State<RootScaffold> {
                     );
                   },
                 ),
+              ListTile(
+                leading: const Icon(Icons.settings_outlined),
+                title: const Text('Configurações'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const SettingsPage()),
+                  );
+                },
+              ),
               const Divider(),
               ListTile(
                 leading: const Icon(Icons.logout, color: Colors.red),

@@ -62,4 +62,10 @@ class DatabaseService {
   Future<List<TalhaoModel>> buscarTodosTalhoes() async {
     return await isar.talhaoModels.where().sortByNome().findAll();
   }
+
+  Future<void> limparTodasLeituras() async {
+    await isar.writeTxn(() async {
+      await isar.leituraModels.clear();
+    });
+  }
 }

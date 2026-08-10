@@ -6,6 +6,8 @@ import '../../data/datasources/database_service.dart';
 import '/../infra/repositories/sync_repository.dart';
 import '/../infra/services/connectivity_service.dart';
 
+enum _SyncResultado { none, sucesso, erro }
+
 /// Indicador de sincronização no AppBar.
 ///
 /// Estados:
@@ -13,6 +15,7 @@ import '/../infra/services/connectivity_service.dart';
 /// - offline → nuvem cortada;
 /// - há pendentes (online) → nuvem com seta + contador (toque sincroniza);
 /// - tudo enviado → nuvem verificada.
+/// - pós-sync → ✓ verde ou ✗ vermelho por 2s antes de reverter.
 class SyncStatusButton extends StatefulWidget {
   const SyncStatusButton({super.key});
 
@@ -29,6 +32,8 @@ class _SyncStatusButtonState extends State<SyncStatusButton> {
   int _pendentes = 0;
   bool _online = true;
   bool _sincronizando = false;
+  _SyncResultado _resultado = _SyncResultado.none;
+  Timer? _timerResultado;
 
   @override
   void initState() {
@@ -44,6 +49,7 @@ class _SyncStatusButtonState extends State<SyncStatusButton> {
   @override
   void dispose() {
     _sub?.cancel();
+    _timerResultado?.cancel();
     super.dispose();
   }
 
@@ -64,27 +70,98 @@ class _SyncStatusButtonState extends State<SyncStatusButton> {
     final estavel = await _connectivity.triplePingCheck();
     String mensagem;
     Color cor;
+    _SyncResultado resultado;
 
     if (estavel) {
       try {
         await _syncRepo.sincronizarLeituras();
         mensagem = 'Dados sincronizados com a nuvem!';
         cor = AppColors.syncSuccess;
+        resultado = _SyncResultado.sucesso;
       } catch (_) {
         mensagem = 'Erro na sincronização. Tente mais tarde.';
         cor = AppColors.syncError;
+        resultado = _SyncResultado.erro;
       }
     } else {
       mensagem = 'Sem conexão estável. Tente mais tarde.';
       cor = AppColors.syncPending;
+      resultado = _SyncResultado.erro;
     }
 
     await _atualizar();
     if (!mounted) return;
-    setState(() => _sincronizando = false);
+
+    _timerResultado?.cancel();
+    setState(() {
+      _sincronizando = false;
+      _resultado = resultado;
+    });
+
+    _timerResultado = Timer(const Duration(seconds: 2), () {
+      if (mounted) setState(() => _resultado = _SyncResultado.none);
+    });
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(mensagem), backgroundColor: cor),
     );
+  }
+
+  Widget _buildBotao() {
+    // Estado de resultado transitório (2s após sync)
+    if (_resultado == _SyncResultado.sucesso) {
+      return const IconButton(
+        key: ValueKey('sucesso'),
+        icon: Icon(Icons.check_circle, color: Colors.white),
+        tooltip: 'Sincronizado!',
+        onPressed: null,
+      );
+    }
+    if (_resultado == _SyncResultado.erro) {
+      return const IconButton(
+        key: ValueKey('erro'),
+        icon: Icon(Icons.cancel, color: Colors.white),
+        tooltip: 'Falha na sincronização',
+        onPressed: null,
+      );
+    }
+
+    // Estado normal
+    final IconData icone;
+    final String dica;
+    final String chave;
+    if (!_online) {
+      icone = Icons.cloud_off_outlined;
+      dica = 'Offline — será sincronizado quando houver conexão';
+      chave = 'offline';
+    } else if (_pendentes > 0) {
+      icone = Icons.cloud_upload_outlined;
+      dica = '$_pendentes leitura(s) pendente(s) — toque para sincronizar';
+      chave = 'pendente';
+    } else {
+      icone = Icons.cloud_done_outlined;
+      dica = 'Tudo sincronizado';
+      chave = 'done';
+    }
+
+    final botao = IconButton(
+      key: ValueKey(chave),
+      icon: Icon(icone, color: Colors.white),
+      tooltip: dica,
+      onPressed: _sincronizarManual,
+    );
+
+    if (_online && _pendentes > 0) {
+      return Stack(
+        key: const ValueKey('pendente_stack'),
+        alignment: Alignment.center,
+        children: [
+          botao,
+          Positioned(right: 6, top: 8, child: _Badge(count: _pendentes)),
+        ],
+      );
+    }
+    return botao;
   }
 
   @override
@@ -95,41 +172,17 @@ class _SyncStatusButtonState extends State<SyncStatusButton> {
         child: SizedBox(
           width: 20,
           height: 20,
-          child:
-              CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
         ),
       );
     }
 
-    final IconData icone;
-    final String dica;
-    if (!_online) {
-      icone = Icons.cloud_off_outlined;
-      dica = 'Offline — será sincronizado quando houver conexão';
-    } else if (_pendentes > 0) {
-      icone = Icons.cloud_upload_outlined;
-      dica = '$_pendentes leitura(s) pendente(s) — toque para sincronizar';
-    } else {
-      icone = Icons.cloud_done_outlined;
-      dica = 'Tudo sincronizado';
-    }
-
-    final botao = IconButton(
-      icon: Icon(icone, color: Colors.white),
-      tooltip: dica,
-      onPressed: _sincronizarManual,
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 250),
+      transitionBuilder: (child, animation) =>
+          ScaleTransition(scale: animation, child: child),
+      child: _buildBotao(),
     );
-
-    if (_online && _pendentes > 0) {
-      return Stack(
-        alignment: Alignment.center,
-        children: [
-          botao,
-          Positioned(right: 6, top: 8, child: _Badge(count: _pendentes)),
-        ],
-      );
-    }
-    return botao;
   }
 }
 

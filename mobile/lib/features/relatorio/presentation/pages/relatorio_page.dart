@@ -198,34 +198,76 @@ class _RelatorioPageState extends State<RelatorioPage> {
                     children: [
                       _SecaoCard(
                         titulo: 'Período',
-                        child: InkWell(
-                          onTap: _selecionarPeriodo,
-                          borderRadius: BorderRadius.circular(AppRadius.md),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 14),
-                            decoration: BoxDecoration(
-                              border: Border.all(color: AppColors.outline),
-                              borderRadius:
-                                  BorderRadius.circular(AppRadius.md),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(
+                                  AppSpacing.md, AppSpacing.md, AppSpacing.md, 0),
+                              child: Wrap(
+                                spacing: AppSpacing.sm,
+                                children: [
+                                  _PresetChip(
+                                    label: '7 dias',
+                                    onTap: () => setState(() => _periodo = DateTimeRange(
+                                          start: DateTime.now()
+                                              .subtract(const Duration(days: 7)),
+                                          end: DateTime.now(),
+                                        )),
+                                  ),
+                                  _PresetChip(
+                                    label: '30 dias',
+                                    onTap: () => setState(() => _periodo = DateTimeRange(
+                                          start: DateTime.now()
+                                              .subtract(const Duration(days: 30)),
+                                          end: DateTime.now(),
+                                        )),
+                                  ),
+                                  _PresetChip(
+                                    label: 'Este mês',
+                                    onTap: () {
+                                      final now = DateTime.now();
+                                      setState(() => _periodo = DateTimeRange(
+                                            start: DateTime(now.year, now.month, 1),
+                                            end: now,
+                                          ));
+                                    },
+                                  ),
+                                ],
+                              ),
                             ),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.date_range_outlined,
-                                    color: AppColors.primary),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Text(
-                                    '${_fmtDate(_periodo.start)}  →  ${_fmtDate(_periodo.end)}',
-                                    style:
-                                        Theme.of(context).textTheme.bodyLarge,
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(
+                                  AppSpacing.md, AppSpacing.sm, AppSpacing.md, AppSpacing.md),
+                              child: InkWell(
+                                onTap: _selecionarPeriodo,
+                                borderRadius: BorderRadius.circular(AppRadius.md),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 14),
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: AppColors.outline),
+                                    borderRadius: BorderRadius.circular(AppRadius.md),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const Icon(Icons.date_range_outlined,
+                                          color: AppColors.primary),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Text(
+                                          '${_fmtDate(_periodo.start)}  →  ${_fmtDate(_periodo.end)}',
+                                          style: Theme.of(context).textTheme.bodyLarge,
+                                        ),
+                                      ),
+                                      const Icon(Icons.chevron_right,
+                                          color: AppColors.textTertiary),
+                                    ],
                                   ),
                                 ),
-                                const Icon(Icons.chevron_right,
-                                    color: AppColors.textTertiary),
-                              ],
+                              ),
                             ),
-                          ),
+                          ],
                         ),
                       ),
                       const SizedBox(height: AppSpacing.lg),
@@ -320,6 +362,21 @@ class _RelatorioPageState extends State<RelatorioPage> {
 }
 
 // ── Widgets de suporte ────────────────────────────────────────────────────────
+
+class _PresetChip extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+  const _PresetChip({required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return ActionChip(
+      label: Text(label),
+      onPressed: onTap,
+      visualDensity: VisualDensity.compact,
+    );
+  }
+}
 
 class _SecaoCard extends StatelessWidget {
   final String titulo;

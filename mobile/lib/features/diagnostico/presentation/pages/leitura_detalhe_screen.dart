@@ -7,6 +7,7 @@ import '../../../../core/utils/formatters.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/diagnostico_badge.dart';
 import '../../../../core/widgets/info_pill.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../data/datasources/database_service.dart';
 import '../../data/models/leitura_model.dart';
 import '../widgets/observacao_field.dart';
@@ -166,12 +167,22 @@ class _LeituraDetalheScreenState extends State<LeituraDetalheScreen> {
                         const SizedBox(height: AppSpacing.md),
                         Align(
                           alignment: Alignment.centerLeft,
-                          child: InfoPill(
-                            icon: Icons.location_on_outlined,
-                            text:
-                                '${l.latitude.toStringAsFixed(4)}, ${l.longitude.toStringAsFixed(4)}',
-                            color: AppColors.info,
-                            background: AppColors.infoContainer,
+                          child: GestureDetector(
+                            onTap: () async {
+                              final url = Uri.parse(
+                                  'https://www.google.com/maps/search/?api=1&query=${l.latitude},${l.longitude}');
+                              if (await canLaunchUrl(url)) {
+                                await launchUrl(url,
+                                    mode: LaunchMode.externalApplication);
+                              }
+                            },
+                            child: InfoPill(
+                              icon: Icons.location_on_outlined,
+                              text:
+                                  '${l.latitude.toStringAsFixed(4)}, ${l.longitude.toStringAsFixed(4)}',
+                              color: AppColors.info,
+                              background: AppColors.infoContainer,
+                            ),
                           ),
                         ),
                       ],

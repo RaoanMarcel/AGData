@@ -17,9 +17,10 @@ class _ClimaCardState extends State<ClimaCard> {
   final ClimaService _service = ClimaService();
 
   bool _carregando = true;
-  String? _erro;
+  bool _erroOffline = false;
   ClimaAtual? _clima;
   String? _cidade;
+  DateTime? _ultimaAtualizacao;
 
   @override
   void initState() {
@@ -30,13 +31,13 @@ class _ClimaCardState extends State<ClimaCard> {
   Future<void> _carregar() async {
     setState(() {
       _carregando = true;
-      _erro = null;
+      _erroOffline = false;
     });
 
     try {
       final pos = await _location.getCurrentPosition();
       if (pos == null) {
-        _falhar('Não foi possível obter a localização.');
+        _falhar();
         return;
       }
       final clima = await _service.buscar(pos.latitude, pos.longitude);
@@ -45,19 +46,28 @@ class _ClimaCardState extends State<ClimaCard> {
       setState(() {
         _clima = clima;
         _cidade = cidade;
+        _ultimaAtualizacao = DateTime.now();
         _carregando = false;
       });
     } catch (_) {
-      _falhar('Não foi possível obter o clima.');
+      _falhar();
     }
   }
 
-  void _falhar(String msg) {
+  void _falhar() {
     if (!mounted) return;
     setState(() {
-      _erro = msg;
+      _erroOffline = true;
       _carregando = false;
     });
+  }
+
+  String _tempoDecorrido() {
+    if (_ultimaAtualizacao == null) return '';
+    final diff = DateTime.now().difference(_ultimaAtualizacao!);
+    if (diff.inMinutes < 1) return 'agora';
+    if (diff.inHours < 1) return 'há ${diff.inMinutes} min';
+    return 'há ${diff.inHours}h';
   }
 
   @override
@@ -79,16 +89,22 @@ class _ClimaCardState extends State<ClimaCard> {
                     children: [
                       Text('Clima agora',
                           style: Theme.of(context).textTheme.titleMedium),
-                      if (_cidade != null)
+                      if (_cidade != null || (_erroOffline && _clima != null))
                         Row(
                           children: [
-                            const Icon(Icons.location_on_outlined,
-                                size: 14, color: AppColors.textTertiary),
+                            Icon(
+                              _erroOffline ? Icons.wifi_off : Icons.location_on_outlined,
+                              size: 14,
+                              color: _erroOffline ? Colors.orange : AppColors.textTertiary,
+                            ),
                             const SizedBox(width: 2),
                             Flexible(
                               child: Text(
-                                _cidade!,
-                                style: Theme.of(context).textTheme.bodySmall,
+                                _erroOffline
+                                    ? 'Offline · ${_tempoDecorrido()}'
+                                    : _cidade!,
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: _erroOffline ? Colors.orange : null),
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
@@ -127,13 +143,13 @@ class _ClimaCardState extends State<ClimaCard> {
       );
     }
 
-    if (_erro != null) {
+    if (_erroOffline && _clima == null) {
       return Row(
         children: [
-          const Icon(Icons.error_outline, color: AppColors.danger, size: 20),
+          const Icon(Icons.wifi_off, color: AppColors.danger, size: 20),
           const SizedBox(width: AppSpacing.sm),
           Expanded(
-            child: Text(_erro!,
+            child: Text('Sem conexão. Verifique a internet.',
                 style: Theme.of(context).textTheme.bodyMedium),
           ),
           TextButton(onPressed: _carregar, child: const Text('Tentar')),

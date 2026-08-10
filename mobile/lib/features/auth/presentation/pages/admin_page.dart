@@ -205,7 +205,23 @@ class _AdminPageState extends State<AdminPage> {
                             color: user.role == UserRole.admin ? Colors.orange : Colors.green,
                           ),
                         ),
-                        title: Text(user.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                        title: Row(
+                          children: [
+                            Flexible(child: Text(user.name, style: const TextStyle(fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis)),
+                            if (isMe) ...[
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.green.shade100,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: Colors.green.shade300),
+                                ),
+                                child: Text('Você', style: TextStyle(fontSize: 11, color: Colors.green.shade800, fontWeight: FontWeight.w600)),
+                              ),
+                            ],
+                          ],
+                        ),
                         subtitle: Text(user.email),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,

@@ -4,12 +4,8 @@ import '../../../../core/theme/app_dimens.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/empty_state.dart';
-import '../../../../core/di/injection_container.dart';
-import '../../../../infra/repositories/sync_repository.dart';
-import '../../../../infra/services/connectivity_service.dart';
 import '../controllers/selecao_talhao_controller.dart';
 import '../widgets/sync_status_button.dart';
-import '../../../auth/presentation/widgets/custom_drawer.dart';
 import 'home_screen.dart';
 
 class SelecaoTalhaoScreen extends StatefulWidget {
@@ -19,36 +15,46 @@ class SelecaoTalhaoScreen extends StatefulWidget {
   State<SelecaoTalhaoScreen> createState() => _SelecaoTalhaoScreenState();
 }
 
+enum _OrdemTalhao { nome, recente, leituras }
+
 class _SelecaoTalhaoScreenState extends State<SelecaoTalhaoScreen> {
   final SelecaoTalhaoController _controller = SelecaoTalhaoController();
-  final SyncRepository _syncRepo = sl<SyncRepository>();
-  final ConnectivityService _connectivity = sl<ConnectivityService>();
+  final _buscaController = TextEditingController();
+  String _busca = '';
+  _OrdemTalhao _ordem = _OrdemTalhao.recente;
 
-  bool _isSyncing = false;
+  @override
+  void dispose() {
+    _buscaController.dispose();
+    super.dispose();
+  }
 
-  Future<void> _handleManualSync() async {
-    setState(() => _isSyncing = true);
-    final isStable = await _connectivity.triplePingCheck();
-    if (isStable) {
-      try {
-        await _syncRepo.sincronizarLeituras();
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Dados sincronizados!'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Erro: $e'), backgroundColor: Colors.red),
-          );
-        }
-      }
+  List<dynamic> get _talhoesFiltrados {
+    var lista = _controller.talhoes.where((t) {
+      return _busca.isEmpty ||
+          t.nome.toLowerCase().contains(_busca.toLowerCase());
+    }).toList();
+
+    switch (_ordem) {
+      case _OrdemTalhao.nome:
+        lista.sort((a, b) => a.nome.compareTo(b.nome));
+      case _OrdemTalhao.recente:
+        lista.sort((a, b) {
+          final ua = _controller.ultimaLeitura[a.nome];
+          final ub = _controller.ultimaLeitura[b.nome];
+          if (ua == null && ub == null) return 0;
+          if (ua == null) return 1;
+          if (ub == null) return -1;
+          return ub.compareTo(ua);
+        });
+      case _OrdemTalhao.leituras:
+        lista.sort((a, b) {
+          final la = _controller.totalLeituras[a.nome] ?? 0;
+          final lb = _controller.totalLeituras[b.nome] ?? 0;
+          return lb.compareTo(la);
+        });
     }
-    setState(() => _isSyncing = false);
+    return lista;
   }
 
   Future<void> _iniciarAnalise(String talhao) async {
@@ -164,13 +170,31 @@ class _SelecaoTalhaoScreenState extends State<SelecaoTalhaoScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      drawer: CustomDrawer(
-        onSync: _handleManualSync,
-        isSyncing: _isSyncing,
-      ),
       appBar: AppBar(
         title: const Text('Selecionar área'),
-        actions: const [SyncStatusButton()],
+        actions: [
+          PopupMenuButton<_OrdemTalhao>(
+            icon: const Icon(Icons.sort),
+            tooltip: 'Ordenar',
+            initialValue: _ordem,
+            onSelected: (v) => setState(() => _ordem = v),
+            itemBuilder: (_) => const [
+              PopupMenuItem(
+                value: _OrdemTalhao.recente,
+                child: Text('Mais recente'),
+              ),
+              PopupMenuItem(
+                value: _OrdemTalhao.nome,
+                child: Text('Nome A–Z'),
+              ),
+              PopupMenuItem(
+                value: _OrdemTalhao.leituras,
+                child: Text('Mais leituras'),
+              ),
+            ],
+          ),
+          const SyncStatusButton(),
+        ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _abrirFormNovoTalhao,
@@ -198,30 +222,60 @@ class _SelecaoTalhaoScreenState extends State<SelecaoTalhaoScreen> {
             );
           }
 
-          return ListView.separated(
-            padding: const EdgeInsets.fromLTRB(
-                AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, 96),
-            itemCount: _controller.talhoes.length + 1,
-            separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
-            itemBuilder: (context, index) {
-              if (index == 0) {
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: AppSpacing.xs),
-                  child: Text(
-                    'Toque em um talhão para iniciar a análise',
-                    style: Theme.of(context).textTheme.bodyMedium,
+          final lista = _talhoesFiltrados;
+
+          return Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.lg, AppSpacing.md, AppSpacing.lg, 0),
+                child: TextField(
+                  controller: _buscaController,
+                  decoration: InputDecoration(
+                    hintText: 'Buscar talhão...',
+                    prefixIcon: const Icon(Icons.search),
+                    suffixIcon: _busca.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.close),
+                            onPressed: () {
+                              _buscaController.clear();
+                              setState(() => _busca = '');
+                            },
+                          )
+                        : null,
+                    isDense: true,
                   ),
-                );
-              }
-              final talhao = _controller.talhoes[index - 1];
-              return _TalhaoCard(
-                nome: talhao.nome,
-                dataCriacao: talhao.dataCriacao,
-                ultimaLeitura: _controller.ultimaLeitura[talhao.nome],
-                totalLeituras: _controller.totalLeituras[talhao.nome] ?? 0,
-                onTap: () => _iniciarAnalise(talhao.nome),
-              );
-            },
+                  onChanged: (v) => setState(() => _busca = v),
+                ),
+              ),
+              Expanded(
+                child: lista.isEmpty
+                    ? const EmptyState(
+                        icon: Icons.search_off,
+                        title: 'Nenhum resultado',
+                        message: 'Tente outro nome de talhão.',
+                      )
+                    : ListView.separated(
+                        padding: const EdgeInsets.fromLTRB(
+                            AppSpacing.lg, AppSpacing.md, AppSpacing.lg, 96),
+                        itemCount: lista.length,
+                        separatorBuilder: (_, __) =>
+                            const SizedBox(height: AppSpacing.md),
+                        itemBuilder: (context, index) {
+                          final talhao = lista[index];
+                          return _TalhaoCard(
+                            nome: talhao.nome,
+                            dataCriacao: talhao.dataCriacao,
+                            ultimaLeitura:
+                                _controller.ultimaLeitura[talhao.nome],
+                            totalLeituras:
+                                _controller.totalLeituras[talhao.nome] ?? 0,
+                            onTap: () => _iniciarAnalise(talhao.nome),
+                          );
+                        },
+                      ),
+              ),
+            ],
           );
         },
       ),

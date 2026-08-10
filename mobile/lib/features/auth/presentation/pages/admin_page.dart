@@ -7,7 +7,6 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../data/models/auth_model.dart';
 import '../controller/session_controller.dart';
-import '../widgets/custom_drawer.dart'; // Import do seu novo Drawer
 import 'add_user_page.dart';
 
 class AdminPage extends StatefulWidget {
@@ -104,8 +103,6 @@ class _AdminPageState extends State<AdminPage> {
       appBar: AppBar(
         title: const Text("Gestão de Operadores"),
       ),
-      // Adicionado o Drawer que você criou
-      drawer: const CustomDrawer(),
       body: Column(
         children: [
           FutureBuilder<String>(

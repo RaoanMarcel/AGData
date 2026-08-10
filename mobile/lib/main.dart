@@ -5,13 +5,9 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:workmanager/workmanager.dart';
 import 'firebase_options.dart';
-import 'features/diagnostico/presentation/pages/home_dashboard_screen.dart';
 import 'features/auth/presentation/pages/login_page.dart';
-import 'features/auth/presentation/pages/super_admin_page.dart';
-import 'features/auth/presentation/pages/admin_page.dart';
-import 'features/diagnostico/presentation/pages/selecao_talhao_screen.dart';
 import 'features/auth/presentation/pages/change_password_page.dart';
-import 'features/auth/data/models/auth_model.dart';
+import 'core/navigation/root_scaffold.dart';
 import 'features/auth/presentation/controller/session_controller.dart';
 import 'features/diagnostico/data/datasources/database_service.dart';
 import 'infra/repositories/sync_repository.dart';
@@ -143,12 +139,8 @@ class _AuthWrapperState extends State<AuthWrapper> {
       final Widget dest;
       if (usuario.needsPasswordChange) {
         dest = const ChangePasswordPage(key: ValueKey('change-pw'));
-      } else if (usuario.role == UserRole.admin) {
-        dest = const AdminPage(key: ValueKey('admin'));
       } else {
-        // superAdmin e operador usam a mesma home; superAdmin acessa
-        // a gestão de empresas via "Painel Global" no drawer lateral.
-        dest = const HomeDashboardScreen(key: ValueKey('home'));
+        dest = const RootScaffold(key: ValueKey('root'));
       }
 
       if (mounted) setState(() => _page = dest);
@@ -196,9 +188,6 @@ class AGDataApp extends StatelessWidget {
       home: const AuthWrapper(),
       routes: {
         '/login': (context) => const LoginPage(),
-        '/super-admin': (context) => const SuperAdminPage(),
-        '/admin': (context) => const AdminPage(),
-        '/selecao-talhao': (context) => const SelecaoTalhaoScreen(),
       },
     );
   }

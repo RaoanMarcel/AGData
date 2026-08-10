@@ -13,8 +13,6 @@ import '../controller/session_controller.dart';
 import '../../data/models/auth_model.dart';
 import '../../data/repositories/auth_repository.dart';
 
-// IMPORT DO SEU CUSTOM DRAWER (Ajuste o caminho conforme sua pasta)
-import '../../presentation/widgets/custom_drawer.dart';
 
 class SuperAdminPage extends StatefulWidget {
   const SuperAdminPage({super.key});
@@ -254,8 +252,6 @@ class _SuperAdminPageState extends State<SuperAdminPage> {
         title: const Text('Painel Global HectarIA'),
         backgroundColor: AppColors.primaryDark,
       ),
-      // UTILIZANDO O SEU CUSTOM DRAWER AQUI
-      drawer: const CustomDrawer(),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(

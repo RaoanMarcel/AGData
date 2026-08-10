@@ -5,6 +5,7 @@ import 'package:dio_cache_interceptor_hive_store/dio_cache_interceptor_hive_stor
 import 'package:path_provider/path_provider.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_dimens.dart';
+import '../../../../core/utils/formatters.dart';
 import '../../../../core/theme/diagnostico_visuals.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/section_header.dart';
@@ -112,6 +113,33 @@ class _MapaScreenState extends State<MapaScreen> {
                             () => tempDoenca = selected ? tipo : null),
                       );
                     }).toList(),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  const SectionHeader(title: "Período"),
+                  const SizedBox(height: AppSpacing.sm),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _DatePickerTile(
+                          label: 'De',
+                          date: tempInicio,
+                          lastDate: tempFim ?? DateTime.now(),
+                          onPicked: (d) => setModalState(() => tempInicio = d),
+                          onCleared: () => setModalState(() => tempInicio = null),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.md),
+                      Expanded(
+                        child: _DatePickerTile(
+                          label: 'Até',
+                          date: tempFim,
+                          firstDate: tempInicio,
+                          lastDate: DateTime.now(),
+                          onPicked: (d) => setModalState(() => tempFim = d),
+                          onCleared: () => setModalState(() => tempFim = null),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: AppSpacing.xl),
                   Row(
@@ -355,6 +383,85 @@ class _Legenda extends StatelessWidget {
                 ),
               );
             }),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DatePickerTile extends StatelessWidget {
+  final String label;
+  final DateTime? date;
+  final DateTime? firstDate;
+  final DateTime? lastDate;
+  final ValueChanged<DateTime> onPicked;
+  final VoidCallback onCleared;
+
+  const _DatePickerTile({
+    required this.label,
+    required this.date,
+    required this.onPicked,
+    required this.onCleared,
+    this.firstDate,
+    this.lastDate,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      onTap: () async {
+        final picked = await showDatePicker(
+          context: context,
+          initialDate: date ?? DateTime.now(),
+          firstDate: firstDate ?? DateTime(2020),
+          lastDate: lastDate ?? DateTime.now(),
+        );
+        if (picked != null) onPicked(picked);
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: date != null ? AppColors.primary : AppColors.outline,
+            width: date != null ? 2 : 1,
+          ),
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          color: date != null ? AppColors.primaryContainer : AppColors.surface,
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.calendar_today_outlined,
+                size: 16,
+                color: date != null ? AppColors.primary : AppColors.textTertiary),
+            const SizedBox(width: AppSpacing.xs),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(label,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppColors.textSecondary)),
+                  Text(
+                    date != null ? formatarData(date!) : '--/--/----',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: date != null
+                            ? AppColors.primary
+                            : AppColors.textTertiary,
+                        fontWeight: date != null ? FontWeight.w600 : null),
+                  ),
+                ],
+              ),
+            ),
+            if (date != null)
+              GestureDetector(
+                onTap: onCleared,
+                child: const Icon(Icons.close,
+                    size: 16, color: AppColors.textTertiary),
+              ),
           ],
         ),
       ),

@@ -3,7 +3,6 @@ import '../../../../core/di/injection_container.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_dimens.dart';
 import '../../../auth/presentation/controller/session_controller.dart';
-import '../../../auth/presentation/widgets/custom_drawer.dart';
 import '../../../clima/presentation/clima_card.dart';
 import '../widgets/sync_status_button.dart';
 import 'selecao_talhao_screen.dart';
@@ -23,42 +22,6 @@ class HomeDashboardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      drawer: const CustomDrawer(),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: 0,
-        onDestinationSelected: (i) {
-          switch (i) {
-            case 1:
-              _ir(context, const SelecaoTalhaoScreen());
-            case 2:
-              _ir(context, const HistoricoScreen());
-            case 3:
-              _ir(context, const MapaScreen());
-          }
-        },
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home),
-            label: 'Início',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.center_focus_strong_outlined),
-            selectedIcon: Icon(Icons.center_focus_strong),
-            label: 'Analisar',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.history_outlined),
-            selectedIcon: Icon(Icons.history),
-            label: 'Histórico',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.map_outlined),
-            selectedIcon: Icon(Icons.map),
-            label: 'Mapa',
-          ),
-        ],
-      ),
       body: Column(
         children: [
           const _TopBar(),
@@ -111,7 +74,7 @@ class _TopBar extends StatelessWidget {
     final subtitulo = nome != null ? 'Olá, $nome!' : 'Diagnóstico fitossanitário da soja';
     return Container(
       padding: EdgeInsets.fromLTRB(
-          AppSpacing.sm, topInset + AppSpacing.sm, AppSpacing.lg, AppSpacing.lg),
+          AppSpacing.lg, topInset + AppSpacing.md, AppSpacing.lg, AppSpacing.lg),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -121,12 +84,6 @@ class _TopBar extends StatelessWidget {
       ),
       child: Row(
         children: [
-          IconButton(
-            icon: const Icon(Icons.menu, color: Colors.white),
-            tooltip: 'Menu',
-            onPressed: () => Scaffold.of(context).openDrawer(),
-          ),
-          const SizedBox(width: AppSpacing.xs),
           Container(
             padding: const EdgeInsets.all(AppSpacing.sm),
             decoration: BoxDecoration(

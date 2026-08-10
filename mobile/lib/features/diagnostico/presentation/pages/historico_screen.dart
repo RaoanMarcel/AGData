@@ -295,30 +295,116 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
           )
         ],
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : _leiturasFiltradas.isEmpty
-              ? const EmptyState(
-                  icon: Icons.search_off,
-                  title: 'Nenhuma análise encontrada',
-                  message:
-                      'Ajuste os filtros ou realize novas leituras no campo.',
-                )
-              : ListView.builder(
-                  padding: const EdgeInsets.all(AppSpacing.lg),
-                  itemCount: talhoes.length,
-                  itemBuilder: (context, index) {
-                    final nome = talhoes[index];
-                    final leituras = grupos[nome]!;
-                    return _TalhaoGrupo(
-                      nome: nome,
-                      leituras: leituras,
-                      selecionados: _selecionados,
-                      onToggle: _alternarSelecao,
-                      onAbrir: _abrirDetalhe,
-                    );
-                  },
-                ),
+      body: Column(
+        children: [
+          if (_dataFiltro != null || _doencaFiltro != 'Todas' || _confiancaFiltro > 0)
+            _FilterChipsBar(
+              dataFiltro: _dataFiltro,
+              doencaFiltro: _doencaFiltro == 'Todas' ? null : _doencaFiltro,
+              confiancaFiltro: _confiancaFiltro > 0 ? _confiancaFiltro : null,
+              onRemoveData: () {
+                setState(() => _dataFiltro = null);
+                _aplicarFiltros();
+              },
+              onRemoveDoenca: () {
+                setState(() => _doencaFiltro = 'Todas');
+                _aplicarFiltros();
+              },
+              onRemoveConfianca: () {
+                setState(() => _confiancaFiltro = 0.0);
+                _aplicarFiltros();
+              },
+            ),
+          Expanded(
+            child: _loading
+                ? const Center(child: CircularProgressIndicator())
+                : _leiturasFiltradas.isEmpty
+                    ? const EmptyState(
+                        icon: Icons.search_off,
+                        title: 'Nenhuma análise encontrada',
+                        message:
+                            'Ajuste os filtros ou realize novas leituras no campo.',
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.all(AppSpacing.lg),
+                        itemCount: talhoes.length,
+                        itemBuilder: (context, index) {
+                          final nome = talhoes[index];
+                          final leituras = grupos[nome]!;
+                          return _TalhaoGrupo(
+                            nome: nome,
+                            leituras: leituras,
+                            selecionados: _selecionados,
+                            onToggle: _alternarSelecao,
+                            onAbrir: _abrirDetalhe,
+                          );
+                        },
+                      ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FilterChipsBar extends StatelessWidget {
+  final DateTime? dataFiltro;
+  final String? doencaFiltro;
+  final double? confiancaFiltro;
+  final VoidCallback onRemoveData;
+  final VoidCallback onRemoveDoenca;
+  final VoidCallback onRemoveConfianca;
+
+  const _FilterChipsBar({
+    required this.dataFiltro,
+    required this.doencaFiltro,
+    required this.confiancaFiltro,
+    required this.onRemoveData,
+    required this.onRemoveDoenca,
+    required this.onRemoveConfianca,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
+      decoration: const BoxDecoration(
+        border: Border(
+            bottom: BorderSide(color: AppColors.outlineVariant)),
+      ),
+      child: Wrap(
+        spacing: AppSpacing.sm,
+        runSpacing: AppSpacing.xs,
+        children: [
+          if (dataFiltro != null)
+            Chip(
+              label: Text('Dia: ${formatarData(dataFiltro!)}'),
+              deleteIcon: const Icon(Icons.close, size: 16),
+              onDeleted: onRemoveData,
+              backgroundColor: AppColors.primaryContainer,
+              side: const BorderSide(color: AppColors.primary),
+            ),
+          if (doencaFiltro != null)
+            Chip(
+              label: Text(doencaFiltro!),
+              deleteIcon: const Icon(Icons.close, size: 16),
+              onDeleted: onRemoveDoenca,
+              backgroundColor: AppColors.primaryContainer,
+              side: const BorderSide(color: AppColors.primary),
+            ),
+          if (confiancaFiltro != null)
+            Chip(
+              label: Text(
+                  'Certeza ≥ ${(confiancaFiltro! * 100).toInt()}%'),
+              deleteIcon: const Icon(Icons.close, size: 16),
+              onDeleted: onRemoveConfianca,
+              backgroundColor: AppColors.primaryContainer,
+              side: const BorderSide(color: AppColors.primary),
+            ),
+        ],
+      ),
     );
   }
 }

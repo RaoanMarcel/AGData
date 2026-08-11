@@ -1646,7 +1646,7 @@ Commit: `perf: RelatorioPage filtra leituras por período no Isar ao invés de c
 
 ## TASK-038 · 🟡 Média · LeituraDetalheScreen — compartilhar resultado individual
 
-**Status:** `pending`  
+**Status:** `done`  
 **Arquivo:** `mobile/lib/features/diagnostico/presentation/pages/leitura_detalhe_screen.dart`
 
 **Contexto:**  

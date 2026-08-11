@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_cache/flutter_map_cache.dart';
 import 'package:dio_cache_interceptor_hive_store/dio_cache_interceptor_hive_store.dart';
@@ -57,6 +58,31 @@ class _LeituraDetalheScreenState extends State<LeituraDetalheScreen> {
     );
   }
 
+  Future<void> _compartilhar() async {
+    final l = widget.leitura;
+    final confiancaStr = '${(l.confianca * 100).toStringAsFixed(1)}%';
+    final dataStr = formatarDataHora(l.dataHora);
+    final temGps = l.latitude != 0.0 || l.longitude != 0.0;
+    final gpsLink = temGps
+        ? 'https://www.google.com/maps/search/?api=1&query=${l.latitude},${l.longitude}'
+        : null;
+
+    final sb = StringBuffer()
+      ..writeln('📊 Diagnóstico HectarIA — AGData')
+      ..writeln('Talhão: ${l.talhao.isEmpty ? "Sem talhão" : l.talhao}')
+      ..writeln('Resultado: ${l.resultadoIA}')
+      ..writeln('Precisão: $confiancaStr')
+      ..writeln('Data: $dataStr');
+    if (l.observacao.trim().isNotEmpty) {
+      sb.writeln('Obs.: ${l.observacao.trim()}');
+    }
+    if (gpsLink != null) {
+      sb.writeln('📍 $gpsLink');
+    }
+
+    await Share.share(sb.toString(), subject: 'Diagnóstico: ${l.resultadoIA}');
+  }
+
   Future<void> _excluir() async {
     final confirmar = await showDialog<bool>(
       context: context,
@@ -99,6 +125,11 @@ class _LeituraDetalheScreenState extends State<LeituraDetalheScreen> {
               tooltip: 'Editar observação',
               onPressed: () => setState(() => _editando = true),
             ),
+          IconButton(
+            icon: const Icon(Icons.share_outlined),
+            tooltip: 'Compartilhar resultado',
+            onPressed: _compartilhar,
+          ),
           IconButton(
             icon: const Icon(Icons.delete_outline),
             tooltip: 'Excluir leitura',

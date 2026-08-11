@@ -36,7 +36,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
         _mostrarFeedback(
           "E-mail enviado!",
           "Verifique sua caixa de entrada (e spam) para redefinir sua senha.",
-          Colors.green,
+          AppColors.syncSuccess,
         );
         Navigator.pop(context); // Volta para a tela de login
       }
@@ -45,7 +45,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
         _mostrarFeedback(
           "Erro",
           "Não foi possível enviar o e-mail: $e",
-          Colors.red,
+          AppColors.danger,
         );
       }
     } finally {
@@ -77,7 +77,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Icon(Icons.lock_reset, size: 80, color: Colors.green),
+              const Icon(Icons.lock_reset, size: 80, color: AppColors.primary),
               const SizedBox(height: 20),
               const Text(
                 "Esqueceu sua senha?",
@@ -88,7 +88,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
               const Text(
                 "Digite seu e-mail abaixo. Enviaremos um link para você criar uma nova senha.",
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey),
+                style: TextStyle(color: AppColors.textTertiary),
               ),
               const SizedBox(height: 30),
 
@@ -111,7 +111,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : _recuperarSenha,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2E7D32),
+                    backgroundColor: AppColors.primary,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -131,7 +131,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
               const Text(
                 "A recuperação de senha requer conexão com a internet. Certifique-se de estar conectado para receber o e-mail.",
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey),
+                style: TextStyle(color: AppColors.textTertiary),
               ),
               const SizedBox(height: 30),
             ],

@@ -314,4 +314,168 @@ Para criar `TalhaoModel` sem Isar: instanciar diretamente (`TalhaoModel()..nome 
 
 ---
 
-_Última atualização pelo planejador: iteração 1 — 2026-08-11_
+---
+
+## TASK-010 · 🔴 Alta · ForgotPasswordPage — corrigir cor hardcoded do botão
+
+**Status:** `done`  
+**Arquivo:** `mobile/lib/features/auth/presentation/pages/forgot_password_page.dart`
+
+**Contexto:**  
+A auditoria encontrou `const Color(0xFF2E7D32)` hardcoded na linha ~114 do botão principal. Todas as outras telas já foram corrigidas nas TASK-001/002 — esta ficou de fora.
+
+**O que fazer:**
+- Localizar `Color(0xFF2E7D32)` no arquivo
+- Substituir por `AppColors.primary`
+- Verificar se `app_colors.dart` já está importado; se não, adicionar
+- Verificar se há outros `Color(0xFF...)` ou `Colors.*` hardcoded no arquivo e substituir
+
+**Critérios de aceitação:**
+- Nenhum `Color(0xFF2E7D32)` restante no arquivo
+- `dart analyze` limpo
+
+---
+
+## TASK-011 · 🟡 Média · AdminPage — dividir lista de usuários em seções por role
+
+**Status:** `pending`  
+**Arquivo:** `mobile/lib/features/auth/presentation/pages/admin_page.dart`
+
+**Contexto:**  
+A lista de usuários é uma `ListView.separated` flat que mistura admins e operadores. Com muitos usuários fica difícil entender a hierarquia. Deve ser dividida em duas seções com cabeçalho.
+
+**O que fazer:**
+
+1. Na query ou no state, separar os usuários em duas listas:
+```dart
+final admins = _usuarios.where((u) => u.role == UserRole.admin).toList();
+final operadores = _usuarios.where((u) => u.role == UserRole.operador).toList();
+```
+
+2. Substituir o `ListView.separated` atual por um `ListView` com itens intercalados:
+- Header "Administradores (N)" → `_SectionHeader`
+- Cards dos admins
+- Header "Operadores (N)" → `_SectionHeader`
+- Cards dos operadores
+
+3. Usar `SectionHeader` de `core/widgets/section_header.dart` para os cabeçalhos, ou criar um widget privado `_ListaHeader` com `Text` + `Divider`.
+
+4. Se uma seção estiver vazia (ex.: nenhum admin além do atual), mostrar texto "Nenhum" ao invés de seção vazia.
+
+5. Manter a barra de busca no topo — ela deve filtrar dentro de cada seção.
+
+**Critérios de aceitação:**
+- Admins aparecem acima, operadores abaixo, com cabeçalhos visíveis
+- A busca ainda funciona e filtra ambas as seções
+- Badge "Você" ainda aparece no usuário logado
+- `dart analyze` limpo
+
+---
+
+## TASK-012 · 🟡 Média · HomeDashboard — contador de leituras pendentes de sync
+
+**Status:** `pending`  
+**Arquivo:** `mobile/lib/features/diagnostico/presentation/pages/home_dashboard_screen.dart`
+
+**Contexto:**  
+O `SyncStatusButton` na TopBar mostra um badge numérico quando há pendentes, mas fica pequeno e discreto. Um contador mais visível no dashboard ajuda o operador a saber que precisa sincronizar. Só aparece quando há pendentes.
+
+**O que fazer:**
+
+1. Adicionar um `FutureBuilder<int>` (ou carregar no `initState` com `setState`) que busca `DatabaseService().contarLeiturasPendentes()`.
+
+2. Renderizar uma `Banner` ou `Card` informativa **somente quando `pendentes > 0`**:
+```dart
+if (pendentes > 0)
+  Padding(
+    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+    child: Card(
+      color: AppColors.syncPending.withOpacity(0.15),
+      child: ListTile(
+        leading: const Icon(Icons.cloud_upload_outlined, color: AppColors.syncPending),
+        title: Text('$pendentes leitura(s) aguardando sincronização'),
+        trailing: const Icon(Icons.chevron_right, size: 18),
+        dense: true,
+        onTap: () { /* nada por agora, ou abrir sheet de sync */ },
+      ),
+    ),
+  ),
+```
+
+3. Posicionar esse widget entre o `ClimaCard` e os action tiles.
+
+4. O `FutureBuilder` deve usar `DatabaseService().contarLeiturasPendentes()` — sem cache, carrega toda vez que o widget rebuilda.
+
+**Critérios de aceitação:**
+- Com 0 pendentes: widget não aparece
+- Com N > 0 pendentes: widget aparece com texto correto
+- `dart analyze` limpo
+
+---
+
+## TASK-013 · 🟢 Baixa · Migrar mensagens de "vazio" para o widget EmptyState
+
+**Status:** `pending`  
+**Arquivos:** verificar `prescricao_page.dart`, `relatorio_page.dart`, `admin_page.dart`, `super_admin_page.dart`
+
+**Contexto:**  
+O widget `core/widgets/empty_state.dart` já existe com `icon`, `title`, `message` e `action` opcional. Algumas telas exibem um `Text` simples ou `SizedBox.shrink()` em vez de usar esse widget.
+
+**O que fazer:**
+
+1. Ler cada arquivo listado e procurar por padrões de estado vazio:
+   - `Text('Nenhum...')` solto em `Center`
+   - `SizedBox.shrink()` como fallback
+   - `Padding + Text` sem ícone
+
+2. Para cada caso encontrado, substituir por:
+```dart
+EmptyState(
+  icon: Icons.xxx_outlined,
+  title: 'Título curto',
+  message: 'Mensagem explicativa do que o usuário pode fazer.',
+)
+```
+
+3. Escolher ícone semanticamente correto:
+   - Lista vazia de usuários → `Icons.people_outline`
+   - Sem leituras → `Icons.analytics_outlined`
+   - Sem talhões → `Icons.agriculture_outlined`
+   - Sem relatório → `Icons.picture_as_pdf_outlined`
+
+4. **NÃO** substituir `EmptyState` que já existe (como o de `SelecaoTalhaoScreen`).
+
+**Critérios de aceitação:**
+- Nenhum `Center(child: Text('Nenhum...'))` sem ícone restante nesses arquivos
+- `dart analyze` limpo
+
+---
+
+## TASK-014 · 🟡 Média · Testes para SyncStatusButton — estados de resultado animado
+
+**Status:** `pending`  
+**Arquivo a criar:** `mobile/test/widget/sync_result_animation_test.dart`
+
+**Contexto:**  
+O `SyncStatusButton` ganhou estados de resultado animado (✓/✗) na sessão anterior. Os testes existentes em `test/widget/sync_status_button_test.dart` provavelmente não cobrem esses novos estados.
+
+**O que fazer:**
+
+Criar `sync_result_animation_test.dart` com testes para:
+
+1. Estado `sucesso` → `Icons.check_circle` aparece no widget tree
+2. Estado `erro` → `Icons.cancel` aparece
+3. Estado `none` + offline → `Icons.cloud_off_outlined` (ou equivalente) aparece
+4. Verificar que `AnimatedSwitcher` está presente na árvore de widgets
+
+Para isso, criar uma subclasse testável de `_SyncStatusButtonState` ou testar via pump+state manipulation.
+
+**Alternativa simples se DI impedir:** Criar um widget de teste isolado `_TestSyncIcon` que só renderiza a parte de ícone baseado em enum `_SyncResultado` passado por parâmetro, e testá-lo diretamente.
+
+**Critérios de aceitação:**
+- `flutter test test/widget/sync_result_animation_test.dart` passa
+- Ao menos 3 `expect()` com finders de ícone
+
+---
+
+_Última atualização pelo planejador: iteração 2 — 2026-08-11_

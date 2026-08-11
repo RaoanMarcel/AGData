@@ -542,7 +542,7 @@ O `cacheWidth`/`cacheHeight` instrui o engine a decodificar na resolução exata
 
 ## TASK-017 · 🟡 Média · ClimaCard — adicionar probabilidade de chuva à previsão
 
-**Status:** `pending`  
+**Status:** `done`  
 **Arquivos:** `mobile/lib/features/clima/data/clima_service.dart`, `mobile/lib/features/clima/presentation/clima_card.dart`
 
 **Contexto:**  

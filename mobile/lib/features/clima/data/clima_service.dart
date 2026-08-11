@@ -9,6 +9,7 @@ class ClimaAtual {
   final double vento;
   final int codigo;
   final List<PrevisaoDia> previsao;
+  final int? precipProbMax; // 0-100 (probabilidade de chuva hoje)
 
   ClimaAtual({
     required this.temperatura,
@@ -16,6 +17,7 @@ class ClimaAtual {
     required this.vento,
     required this.codigo,
     required this.previsao,
+    this.precipProbMax,
   });
 }
 
@@ -47,7 +49,7 @@ class ClimaService {
       'https://api.open-meteo.com/v1/forecast'
       '?latitude=$lat&longitude=$lon'
       '&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m'
-      '&daily=weather_code,temperature_2m_max,temperature_2m_min'
+      '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max'
       '&timezone=auto&forecast_days=4',
     );
 
@@ -64,6 +66,7 @@ class ClimaService {
     final codigos = (daily['weather_code'] as List).cast<num>();
     final maximas = (daily['temperature_2m_max'] as List).cast<num>();
     final minimas = (daily['temperature_2m_min'] as List).cast<num>();
+    final precipProbs = daily['precipitation_probability_max'] as List?;
 
     final previsao = <PrevisaoDia>[
       for (int i = 0; i < tempos.length; i++)
@@ -75,12 +78,18 @@ class ClimaService {
         ),
     ];
 
+    // Probabilidade de precipitação do dia atual (primeiro elemento).
+    final int? precipProbMax = precipProbs != null && precipProbs.isNotEmpty
+        ? (precipProbs[0] as num?)?.toInt()
+        : null;
+
     return ClimaAtual(
       temperatura: (current['temperature_2m'] as num).toDouble(),
       umidade: (current['relative_humidity_2m'] as num).toDouble(),
       vento: (current['wind_speed_10m'] as num).toDouble(),
       codigo: (current['weather_code'] as num).toInt(),
       previsao: previsao,
+      precipProbMax: precipProbMax,
     );
   }
 

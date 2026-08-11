@@ -187,6 +187,12 @@ class _ClimaCardState extends State<ClimaCard> {
                 _MetaClima(
                     icon: Icons.air,
                     texto: '${clima.vento.round()} km/h'),
+                if (clima.precipProbMax != null) ...[
+                  const SizedBox(height: AppSpacing.xs),
+                  _MetaClima(
+                      icon: Icons.umbrella_outlined,
+                      texto: '${clima.precipProbMax}% chuva'),
+                ],
               ],
             ),
           ],

@@ -453,7 +453,7 @@ EmptyState(
 
 ## TASK-014 · 🟡 Média · Testes para SyncStatusButton — estados de resultado animado
 
-**Status:** `pending`  
+**Status:** `done`  
 **Arquivo a criar:** `mobile/test/widget/sync_result_animation_test.dart`
 
 **Contexto:**  

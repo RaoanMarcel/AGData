@@ -1935,7 +1935,7 @@ Commit: `perf: SettingsPage usa contarTodasLeituras() ao invés de carregar tudo
 
 ## TASK-042 · 🔴 Alta · HistoricoScreen — tratamento de erro em _carregarDados()
 
-**Status:** `pending`  
+**Status:** `done`  
 **Arquivo:** `mobile/lib/features/diagnostico/presentation/pages/historico_screen.dart`
 
 **Contexto:**  

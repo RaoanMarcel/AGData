@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_dimens.dart';
 import '../../../../core/utils/formatters.dart';
@@ -30,6 +32,7 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
 
   final List<int> _selecionados = [];
   bool _loading = true;
+  bool _erro = false;
   bool _temMais = true;
   bool _carregandoMais = false;
 
@@ -85,36 +88,47 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
   }
 
   Future<void> _carregarDados() async {
-    var dados = await _databaseService.buscarLeiturasPaginadas(
-        limite: 50, offset: 0);
-    // Restringe ao talhão de origem, quando aberto a partir da câmera.
-    if (widget.talhaoInicial != null) {
-      dados = dados.where((l) => l.talhao == widget.talhaoInicial).toList();
-    }
-    if (mounted) {
-      setState(() {
-        _todasLeituras = dados;
-        _leiturasFiltradas = List.from(_todasLeituras);
-        _temMais = dados.length == 50;
-        _loading = false;
-      });
+    setState(() => _erro = false);
+    try {
+      var dados = await _databaseService.buscarLeiturasPaginadas(
+          limite: 50, offset: 0);
+      // Restringe ao talhão de origem, quando aberto a partir da câmera.
+      if (widget.talhaoInicial != null) {
+        dados = dados.where((l) => l.talhao == widget.talhaoInicial).toList();
+      }
+      if (mounted) {
+        setState(() {
+          _todasLeituras = dados;
+          _leiturasFiltradas = List.from(_todasLeituras);
+          _temMais = dados.length == 50;
+          _loading = false;
+        });
+      }
+    } catch (e, st) {
+      unawaited(Sentry.captureException(e, stackTrace: st));
+      if (mounted) setState(() { _loading = false; _erro = true; });
     }
   }
 
   Future<void> _carregarMais() async {
     setState(() => _carregandoMais = true);
-    var novas = await _databaseService.buscarLeiturasPaginadas(
-        limite: 50, offset: _todasLeituras.length);
-    if (widget.talhaoInicial != null) {
-      novas = novas.where((l) => l.talhao == widget.talhaoInicial).toList();
+    try {
+      var novas = await _databaseService.buscarLeiturasPaginadas(
+          limite: 50, offset: _todasLeituras.length);
+      if (widget.talhaoInicial != null) {
+        novas = novas.where((l) => l.talhao == widget.talhaoInicial).toList();
+      }
+      if (!mounted) return;
+      setState(() {
+        _todasLeituras.addAll(novas);
+        _temMais = novas.length == 50;
+        _carregandoMais = false;
+      });
+      _aplicarFiltros();
+    } catch (e, st) {
+      unawaited(Sentry.captureException(e, stackTrace: st));
+      if (mounted) setState(() => _carregandoMais = false);
     }
-    if (!mounted) return;
-    setState(() {
-      _todasLeituras.addAll(novas);
-      _temMais = novas.length == 50;
-      _carregandoMais = false;
-    });
-    _aplicarFiltros();
   }
 
   // --- LÓGICA DE FILTRAGEM ---
@@ -468,39 +482,64 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
           Expanded(
             child: _loading
                 ? const Center(child: CircularProgressIndicator())
-                : _leiturasFiltradas.isEmpty
-                    ? const EmptyState(
-                        icon: Icons.search_off,
-                        title: 'Nenhuma análise encontrada',
-                        message:
-                            'Ajuste os filtros ou realize novas leituras no campo.',
-                      )
-                    : RefreshIndicator(
-                        onRefresh: _recarregar,
-                        child: ListView.builder(
-                          controller: _scrollController,
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          padding: const EdgeInsets.all(AppSpacing.lg),
-                          itemCount: talhoes.length + (_carregandoMais ? 1 : 0),
-                          itemBuilder: (context, index) {
-                            if (index == talhoes.length) {
-                              return const Padding(
-                                padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
-                                child: Center(child: CircularProgressIndicator()),
-                              );
-                            }
-                            final nome = talhoes[index];
-                            final leituras = grupos[nome]!;
-                            return _TalhaoGrupo(
-                              nome: nome,
-                              leituras: leituras,
-                              selecionados: _selecionados,
-                              onToggle: _alternarSelecao,
-                              onAbrir: _abrirDetalhe,
-                            );
-                          },
+                : _erro
+                    ? Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.error_outline,
+                                size: 48, color: AppColors.danger),
+                            const SizedBox(height: AppSpacing.md),
+                            Text('Erro ao carregar leituras',
+                                style: Theme.of(context).textTheme.titleMedium),
+                            const SizedBox(height: AppSpacing.sm),
+                            ElevatedButton.icon(
+                              icon: const Icon(Icons.refresh),
+                              label: const Text('Tentar novamente'),
+                              onPressed: () {
+                                setState(() {
+                                  _loading = true;
+                                  _erro = false;
+                                });
+                                _carregarDados();
+                              },
+                            ),
+                          ],
                         ),
-                      ),
+                      )
+                    : _leiturasFiltradas.isEmpty
+                        ? const EmptyState(
+                            icon: Icons.search_off,
+                            title: 'Nenhuma análise encontrada',
+                            message:
+                                'Ajuste os filtros ou realize novas leituras no campo.',
+                          )
+                        : RefreshIndicator(
+                            onRefresh: _recarregar,
+                            child: ListView.builder(
+                              controller: _scrollController,
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              padding: const EdgeInsets.all(AppSpacing.lg),
+                              itemCount: talhoes.length + (_carregandoMais ? 1 : 0),
+                              itemBuilder: (context, index) {
+                                if (index == talhoes.length) {
+                                  return const Padding(
+                                    padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
+                                    child: Center(child: CircularProgressIndicator()),
+                                  );
+                                }
+                                final nome = talhoes[index];
+                                final leituras = grupos[nome]!;
+                                return _TalhaoGrupo(
+                                  nome: nome,
+                                  leituras: leituras,
+                                  selecionados: _selecionados,
+                                  onToggle: _alternarSelecao,
+                                  onAbrir: _abrirDetalhe,
+                                );
+                              },
+                            ),
+                          ),
           ),
         ],
       ),

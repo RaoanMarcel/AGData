@@ -255,7 +255,7 @@ Há apenas um placeholder em `mobile/test/infra_test.dart`. O app tem lógica pu
 
 ## TASK-008 · 🟡 Média · Testes de widget — componentes visuais isolados
 
-**Status:** `pending`  
+**Status:** `done`  
 **Arquivos a criar:**
 - `mobile/test/widget/diagnostico_badge_test.dart`
 - `mobile/test/widget/empty_state_test.dart`

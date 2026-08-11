@@ -41,6 +41,17 @@ class DatabaseService {
         .findAll();
   }
 
+  Future<List<LeituraModel>> buscarLeiturasPorPeriodo(
+    DateTime inicio,
+    DateTime fim,
+  ) async {
+    final fimDia = fim.add(const Duration(days: 1));
+    return (await isar.leituraModels.where().sortByDataHoraDesc().findAll())
+        .where((l) =>
+            !l.dataHora.isBefore(inicio) && !l.dataHora.isAfter(fimDia))
+        .toList();
+  }
+
   Future<void> deletarLeitura(int id) async {
     await isar.writeTxn(() async {
       await isar.leituraModels.delete(id);

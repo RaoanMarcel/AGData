@@ -55,10 +55,18 @@ class _RelatorioPageState extends State<RelatorioPage> {
     _init();
   }
 
+  Future<void> _recarregarLeituras() async {
+    setState(() => _loading = true);
+    _todasLeituras =
+        await _db.buscarLeiturasPorPeriodo(_periodo.start, _periodo.end);
+    if (mounted) setState(() => _loading = false);
+  }
+
   Future<void> _init() async {
     final session = sl<SessionController>();
     _talhoes = await _db.buscarTodosTalhoes();
-    _todasLeituras = await _db.buscarTodasLeituras();
+    _todasLeituras =
+        await _db.buscarLeiturasPorPeriodo(_periodo.start, _periodo.end);
 
     final companyId = session.usuario?.companyId ?? '';
     if (companyId.isNotEmpty) {
@@ -176,7 +184,10 @@ class _RelatorioPageState extends State<RelatorioPage> {
         child: child!,
       ),
     );
-    if (range != null) setState(() => _periodo = range);
+    if (range != null) {
+      setState(() => _periodo = range);
+      await _recarregarLeituras();
+    }
   }
 
   String _fmtDate(DateTime dt) {
@@ -210,19 +221,25 @@ class _RelatorioPageState extends State<RelatorioPage> {
                                 children: [
                                   _PresetChip(
                                     label: '7 dias',
-                                    onTap: () => setState(() => _periodo = DateTimeRange(
-                                          start: DateTime.now()
-                                              .subtract(const Duration(days: 7)),
-                                          end: DateTime.now(),
-                                        )),
+                                    onTap: () {
+                                      setState(() => _periodo = DateTimeRange(
+                                            start: DateTime.now()
+                                                .subtract(const Duration(days: 7)),
+                                            end: DateTime.now(),
+                                          ));
+                                      _recarregarLeituras();
+                                    },
                                   ),
                                   _PresetChip(
                                     label: '30 dias',
-                                    onTap: () => setState(() => _periodo = DateTimeRange(
-                                          start: DateTime.now()
-                                              .subtract(const Duration(days: 30)),
-                                          end: DateTime.now(),
-                                        )),
+                                    onTap: () {
+                                      setState(() => _periodo = DateTimeRange(
+                                            start: DateTime.now()
+                                                .subtract(const Duration(days: 30)),
+                                            end: DateTime.now(),
+                                          ));
+                                      _recarregarLeituras();
+                                    },
                                   ),
                                   _PresetChip(
                                     label: 'Este mês',
@@ -232,6 +249,7 @@ class _RelatorioPageState extends State<RelatorioPage> {
                                             start: DateTime(now.year, now.month, 1),
                                             end: now,
                                           ));
+                                      _recarregarLeituras();
                                     },
                                   ),
                                 ],

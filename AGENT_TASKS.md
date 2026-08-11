@@ -1579,4 +1579,315 @@ Commit: `test: testes para lógica de exclusão e estrutura de settings`
 
 ---
 
-_Última atualização pelo planejador: iteração 7 — 2026-08-11_
+---
+
+## TASK-037 · 🔴 Alta · RelatorioPage: filtro de data no nível do banco Isar
+
+**Status:** `done`  
+**Arquivos:**
+- `mobile/lib/features/diagnostico/data/datasources/database_service.dart`
+- `mobile/lib/features/diagnostico/data/models/leitura_model.dart` (verificar índices)
+- `mobile/lib/features/relatorio/presentation/pages/relatorio_page.dart`
+
+**Contexto:**  
+`RelatorioPage._init()` usa `buscarTodasLeituras()` que carrega **todo** o banco Isar em memória. O filtro por data (`_leiturasFiltered`) é feito depois em Dart. Com muitas leituras, isso é ineficiente — melhor filtrar diretamente no Isar.
+
+**O que fazer:**
+
+**1. Verificar se `LeituraModel.dataHora` tem `@Index()`:**
+Abrir `mobile/lib/features/diagnostico/data/models/leitura_model.dart` e verificar se `dataHora` tem anotação de índice. Se não tiver, adicionar `@Index()` antes do campo:
+```dart
+@Index()
+late DateTime dataHora;
+```
+**Importante:** Adicionar `@Index()` a um campo existente **não quebra** dados — o Isar recria o índice na próxima abertura. Mas requer incrementar `schemasVersion` em `DatabaseService.initialize()` e adicionar `migration` (ou usar `Isar.openAsync` com `compactOnLaunch`). Verificar como o Isar é inicializado no projeto e seguir o padrão existente.
+
+**Alternativa sem índice:** Usar `.filter().dataHoraGreaterThan(start).dataHoraLessThan(end)` — que não precisa de índice mas é mais lento que `.where()` indexado. Para este app, a alternativa com `.filter()` é suficiente.
+
+**2. Adicionar método em `DatabaseService`:**
+```dart
+Future<List<LeituraModel>> buscarLeiturasPorPeriodo(
+  DateTime inicio,
+  DateTime fim,
+) async {
+  return await isar.leituraModels
+      .filter()
+      .dataHoraGreaterThan(inicio.subtract(const Duration(seconds: 1)))
+      .dataHoraLessThan(fim.add(const Duration(days: 1)))
+      .sortByDataHoraDesc()
+      .findAll();
+}
+```
+
+**3. Em `RelatorioPage._init()`**, substituir:
+```dart
+// ANTES:
+_todasLeituras = await _db.buscarTodasLeituras();
+
+// DEPOIS:
+_todasLeituras = await _db.buscarLeiturasPorPeriodo(_periodo.start, _periodo.end);
+```
+
+**4.** Quando o usuário mudar o período (`_periodo`), refazer a busca. Localizar onde `_periodo` é atualizado (deve haver um `showDateRangePicker` ou equivalente) e chamar `_recarregarLeituras()`:
+```dart
+Future<void> _recarregarLeituras() async {
+  setState(() => _loading = true);
+  _todasLeituras = await _db.buscarLeiturasPorPeriodo(_periodo.start, _periodo.end);
+  if (mounted) setState(() => _loading = false);
+}
+```
+
+**5.** O getter `_leiturasFiltered` ainda pode filtrar por talhão (já funciona com a lista em memória).
+
+`dart analyze mobile` → sem erros.  
+Commit: `perf: RelatorioPage filtra leituras por período no Isar ao invés de carregar tudo`
+
+---
+
+## TASK-038 · 🟡 Média · LeituraDetalheScreen — compartilhar resultado individual
+
+**Status:** `pending`  
+**Arquivo:** `mobile/lib/features/diagnostico/presentation/pages/leitura_detalhe_screen.dart`
+
+**Contexto:**  
+A tela de detalhe tem editar e excluir, mas não tem botão de compartilhar o resultado individualmente. O pacote `share_plus` já está no pubspec (usado em `relatorio_page.dart`).
+
+**O que fazer:**
+
+1. Adicionar import:
+```dart
+import 'package:share_plus/share_plus.dart';
+```
+
+2. Implementar `_compartilhar()`:
+```dart
+Future<void> _compartilhar() async {
+  final l = widget.leitura;
+  final confiancaStr = '${(l.confianca * 100).toStringAsFixed(1)}%';
+  final dataStr = formatarDataHora(l.dataHora);
+  final gpsStr = (l.latitude != 0.0 || l.longitude != 0.0)
+      ? 'https://www.google.com/maps/search/?api=1&query=${l.latitude},${l.longitude}'
+      : null;
+
+  final sb = StringBuffer()
+    ..writeln('📊 Diagnóstico HectarIA — AGData')
+    ..writeln('Talhão: ${l.talhao.isEmpty ? "Sem talhão" : l.talhao}')
+    ..writeln('Resultado: ${l.resultadoIA}')
+    ..writeln('Precisão: $confiancaStr')
+    ..writeln('Data: $dataStr');
+  if (l.observacao.trim().isNotEmpty) {
+    sb.writeln('Obs.: ${l.observacao.trim()}');
+  }
+  if (gpsStr != null) {
+    sb.writeln('📍 $gpsStr');
+  }
+
+  await Share.share(sb.toString(), subject: 'Diagnóstico: ${l.resultadoIA}');
+}
+```
+
+3. Adicionar `IconButton` de compartilhar na AppBar, **antes** do botão de delete:
+```dart
+IconButton(
+  icon: const Icon(Icons.share_outlined),
+  tooltip: 'Compartilhar resultado',
+  onPressed: _compartilhar,
+),
+```
+
+`dart analyze mobile` → sem erros.  
+Commit: `feat: botão de compartilhar resultado individual no LeituraDetalheScreen`
+
+**Critérios de aceitação:**
+- Share sheet do sistema abre com texto formatado
+- GPS link incluído quando disponível
+- `dart analyze` limpo
+
+---
+
+## TASK-039 · 🟡 Média · Sentry em ClimaCard, AdminPage e sync_repository catch blocks restantes
+
+**Status:** `pending`  
+**Arquivos:**
+- `mobile/lib/features/clima/presentation/clima_card.dart`
+- `mobile/lib/features/auth/presentation/pages/admin_page.dart`
+
+**Contexto:**  
+Após a TASK-025, os catch blocks de `home_controller.dart` e `sync_repository.dart` foram instrumentados com Sentry. Mas `ClimaCard` tem `catch (_) { _falhar(); }` e `AdminPage` tem catch blocks sem Sentry, perdendo visibilidade de erros de produção nesses fluxos.
+
+**O que fazer:**
+
+**Em `clima_card.dart`:**
+
+1. Adicionar imports:
+```dart
+import 'dart:async';
+import 'package:sentry_flutter/sentry_flutter.dart';
+```
+
+2. Em `_carregar()`, substituir `catch (_)` por:
+```dart
+} catch (e, st) {
+  unawaited(Sentry.captureException(e, stackTrace: st));
+  _falhar();
+}
+```
+
+**Em `admin_page.dart`:**
+
+3. Adicionar imports (se ausentes):
+```dart
+import 'dart:async';
+import 'package:sentry_flutter/sentry_flutter.dart';
+```
+
+4. Em `_confirmarExclusao()` → `onPressed` do botão Excluir, o catch já mostra snackbar mas não reporta ao Sentry. Adicionar:
+```dart
+} catch (e, st) {
+  unawaited(Sentry.captureException(e, stackTrace: st));
+  if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(content: Text("Erro ao excluir: $e")),
+  );
+}
+```
+
+5. Em `_enviarAcessoWhatsApp()`, o catch também faz apenas snackbar — adicionar Sentry igualmente.
+
+`dart analyze mobile` → sem erros.  
+Commit: `feat: Sentry nos catch blocks de ClimaCard e AdminPage`
+
+---
+
+## TASK-040 · 🟡 Média · Unit tests para lógica de filtro do RelatorioPage
+
+**Status:** `pending`  
+**Arquivo novo:** `mobile/test/unit/relatorio_filter_test.dart`
+
+**Contexto:**  
+O getter `_leiturasFiltered` do `RelatorioPage` contém lógica de filtro por período e talhão. Extraindo como função pura, é fácil cobrir com testes — sem Firebase, sem Isar.
+
+**O que fazer:**
+
+Criar `mobile/test/unit/relatorio_filter_test.dart`:
+
+```dart
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mobile/features/diagnostico/data/models/leitura_model.dart';
+
+/// Espelho do getter _leiturasFiltered do RelatorioPage
+List<LeituraModel> filtrarParaRelatorio(
+  List<LeituraModel> todas, {
+  required DateTime inicio,
+  required DateTime fim,
+  Set<String>? talhoesSelecionados,
+}) {
+  return todas.where((l) {
+    final noTalhao = talhoesSelecionados == null ||
+        talhoesSelecionados.isEmpty ||
+        talhoesSelecionados.contains(l.talhao);
+    final noRange = !l.dataHora.isBefore(inicio) &&
+        !l.dataHora.isAfter(fim.add(const Duration(days: 1)));
+    return noTalhao && noRange;
+  }).toList();
+}
+
+LeituraModel _make({
+  required String talhao,
+  required DateTime dataHora,
+  String resultado = 'SAUDÁVEL',
+}) {
+  return LeituraModel()
+    ..talhao = talhao
+    ..dataHora = dataHora
+    ..resultadoIA = resultado
+    ..confianca = 0.9
+    ..caminhoImagem = '/fake/path.jpg'
+    ..latitude = -22.0
+    ..longitude = -47.0;
+}
+
+void main() {
+  final base = DateTime(2024, 6, 1);
+  final leituras = [
+    _make(talhao: 'T1', dataHora: DateTime(2024, 5, 15)),
+    _make(talhao: 'T1', dataHora: DateTime(2024, 6, 10)),
+    _make(talhao: 'T2', dataHora: DateTime(2024, 6, 20)),
+    _make(talhao: 'T3', dataHora: DateTime(2024, 7, 5)),
+  ];
+
+  group('filtrar por período', () {
+    test('retorna apenas leituras dentro do período', () {
+      final result = filtrarParaRelatorio(
+        leituras,
+        inicio: base,
+        fim: DateTime(2024, 6, 30),
+      );
+      expect(result.length, 2); // T1 junho e T2 junho
+    });
+
+    test('exclui leituras fora do período', () {
+      final result = filtrarParaRelatorio(
+        leituras,
+        inicio: DateTime(2024, 7, 1),
+        fim: DateTime(2024, 7, 31),
+      );
+      expect(result.length, 1);
+      expect(result.first.talhao, 'T3');
+    });
+
+    test('período de 1 dia inclui leituras desse dia', () {
+      final result = filtrarParaRelatorio(
+        leituras,
+        inicio: DateTime(2024, 6, 10),
+        fim: DateTime(2024, 6, 10),
+      );
+      expect(result.length, 1);
+      expect(result.first.talhao, 'T1');
+    });
+  });
+
+  group('filtrar por talhão', () {
+    test('sem seleção retorna todos', () {
+      final result = filtrarParaRelatorio(
+        leituras,
+        inicio: DateTime(2024, 1, 1),
+        fim: DateTime(2024, 12, 31),
+        talhoesSelecionados: {},
+      );
+      expect(result.length, 4);
+    });
+
+    test('com seleção retorna apenas talhões escolhidos', () {
+      final result = filtrarParaRelatorio(
+        leituras,
+        inicio: DateTime(2024, 1, 1),
+        fim: DateTime(2024, 12, 31),
+        talhoesSelecionados: {'T1'},
+      );
+      expect(result.length, 2);
+      expect(result.every((l) => l.talhao == 'T1'), isTrue);
+    });
+  });
+
+  group('combinação', () {
+    test('filtro de período + talhão aplica interseção', () {
+      final result = filtrarParaRelatorio(
+        leituras,
+        inicio: base,
+        fim: DateTime(2024, 6, 30),
+        talhoesSelecionados: {'T2'},
+      );
+      expect(result.length, 1);
+      expect(result.first.talhao, 'T2');
+    });
+  });
+}
+```
+
+Rodar `flutter test test/unit/relatorio_filter_test.dart` dentro de `mobile/`.
+
+Commit: `test: testes unitários para lógica de filtro do RelatorioPage`
+
+---
+
+_Última atualização pelo planejador: iteração 8 — 2026-08-11_

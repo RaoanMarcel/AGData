@@ -95,7 +95,7 @@ class _ClimaCardState extends State<ClimaCard> {
                             Icon(
                               _erroOffline ? Icons.wifi_off : Icons.location_on_outlined,
                               size: 14,
-                              color: _erroOffline ? Colors.orange : AppColors.textTertiary,
+                              color: _erroOffline ? AppColors.warning : AppColors.textTertiary,
                             ),
                             const SizedBox(width: 2),
                             Flexible(
@@ -104,7 +104,7 @@ class _ClimaCardState extends State<ClimaCard> {
                                     ? 'Offline · ${_tempoDecorrido()}'
                                     : _cidade!,
                                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: _erroOffline ? Colors.orange : null),
+                                    color: _erroOffline ? AppColors.warning : null),
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),

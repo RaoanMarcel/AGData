@@ -478,4 +478,210 @@ Para isso, criar uma subclasse testável de `_SyncStatusButtonState` ou testar v
 
 ---
 
-_Última atualização pelo planejador: iteração 2 — 2026-08-11_
+---
+
+## TASK-015 · 🔴 Alta · Adicionar token AppColors.warning e corrigir Colors.orange no ClimaCard
+
+**Status:** `done`  
+**Arquivos:** `mobile/lib/core/theme/app_colors.dart`, `mobile/lib/features/clima/presentation/clima_card.dart`
+
+**Contexto:**  
+A auditoria encontrou `Colors.orange` hardcoded nas linhas 98 e 107 de `clima_card.dart` para o estado offline. O design system não define um token `warning` (laranja), quebrando a regra de usar AppColors.
+
+**O que fazer:**
+
+1. Em `app_colors.dart`, adicionar após os tokens existentes:
+```dart
+static const Color warning = Color(0xFFE65100);
+static const Color warningContainer = Color(0xFFFBE9E7);
+```
+
+2. Em `clima_card.dart`, substituir:
+- `Colors.orange` (linha 98) → `AppColors.warning`
+- `Colors.orange` (linha 107) → `AppColors.warning`
+
+3. Adicionar import de `app_colors.dart` em `clima_card.dart` se ainda não existir.
+
+**Critérios de aceitação:**
+- `dart analyze` limpo
+- Nenhum `Colors.orange` restante no ClimaCard
+- Token `AppColors.warning` disponível para uso futuro
+
+---
+
+## TASK-016 · 🟡 Média · HistoricoScreen — limitar resolução de thumbnails para evitar jank
+
+**Status:** `pending`  
+**Arquivo:** `mobile/lib/features/diagnostico/presentation/pages/historico_screen.dart`
+
+**Contexto:**  
+O widget `_Thumb` (linhas ~586-608) usa `Image.file()` sem `cacheWidth`/`cacheHeight`. Isso faz o Flutter decodificar a imagem full-resolution (geralmente 4-8 MB do sensor) na memória para exibir um thumbnail de 72×72px. Em listas longas causa picos de memória e jank.
+
+**O que fazer:**
+
+Localizar o `Image.file(...)` dentro de `_Thumb` e adicionar os parâmetros de cache:
+```dart
+Image.file(
+  File(leitura.caminhoImagem),
+  width: 72,
+  height: 72,
+  fit: BoxFit.cover,
+  cacheWidth: 144,   // 2× para displays de alta resolução
+  cacheHeight: 144,
+  errorBuilder: (_, __, ___) => const Icon(Icons.broken_image),
+)
+```
+
+O `cacheWidth`/`cacheHeight` instrui o engine a decodificar na resolução exata, reduzindo uso de memória em ~99% por thumbnail.
+
+**Critérios de aceitação:**
+- `Image.file` em `_Thumb` tem `cacheWidth: 144, cacheHeight: 144`
+- `dart analyze` limpo
+
+---
+
+## TASK-017 · 🟡 Média · ClimaCard — adicionar probabilidade de chuva à previsão
+
+**Status:** `pending`  
+**Arquivos:** `mobile/lib/features/clima/data/clima_service.dart`, `mobile/lib/features/clima/presentation/clima_card.dart`
+
+**Contexto:**  
+A API Open-Meteo já é consultada mas só pede temperatura, umidade, vento e código WMO. A probabilidade de precipitação (`precipitation_probability_max`) é a métrica mais relevante para trabalho de campo agrícola e não está sendo exibida.
+
+**O que fazer:**
+
+1. Em `clima_service.dart`, adicionar `precipitation_probability_max` à lista de parâmetros `daily` da URL da API (verificar como os outros parâmetros daily são passados na URL).
+
+2. Criar ou atualizar o modelo de clima (`ClimaModel` ou equivalente) para incluir:
+```dart
+final int? precipProbMax; // 0-100
+```
+
+3. No parser da resposta JSON (`fromJson` ou equivalente), extrair `precipitation_probability_max[0]` (dia atual).
+
+4. Em `clima_card.dart`, adicionar na linha de previsão do dia atual ou na row de métricas:
+```dart
+if (precipProb != null)
+  _MetricaItem(
+    icon: Icons.water_drop_outlined,
+    valor: '$precipProb%',
+    label: 'Chuva',
+  )
+```
+
+**Critérios de aceitação:**
+- A probabilidade de chuva aparece no card quando disponível
+- Se API retornar null, campo não aparece (sem crash)
+- `dart analyze` limpo
+
+---
+
+## TASK-018 · 🟡 Média · HomeScreen — etapas visuais no progresso de análise ML
+
+**Status:** `pending`  
+**Arquivos:** `mobile/lib/features/diagnostico/presentation/pages/home_screen.dart`, `mobile/lib/features/diagnostico/presentation/controllers/home_controller.dart`
+
+**Contexto:**  
+O `_LoadingCard` mostra apenas "Analisando amostra..." com um spinner genérico. O controller executa 3 etapas distintas: predição TFLite → extração GPS → salvamento. Exibir cada etapa dá feedback real ao usuário e reduz a ansiedade de espera.
+
+**O que fazer:**
+
+1. Em `home_controller.dart`, adicionar um campo `String etapaAtual` (ou enum) e chamar `notifyListeners()` ao mudar de etapa:
+```dart
+String etapaProgresso = 'Preparando análise...';
+
+// Antes da predição:
+etapaProgresso = 'Consultando IA...'; notifyListeners();
+
+// Antes da extração GPS:
+etapaProgresso = 'Obtendo localização...'; notifyListeners();
+
+// Antes de salvar:
+etapaProgresso = 'Salvando resultado...'; notifyListeners();
+```
+
+2. Em `home_screen.dart`, no `_LoadingCard`, exibir `controller.etapaProgresso` no lugar (ou abaixo) do texto fixo:
+```dart
+Text(
+  controller.etapaProgresso,
+  style: Theme.of(context).textTheme.bodyMedium,
+  textAlign: TextAlign.center,
+)
+```
+
+3. Garantir que o ListenableBuilder já envolve o card — se não, envolver.
+
+**Critérios de aceitação:**
+- Texto muda visivelmente durante o processamento (verificável no código — não precisamos rodar o app)
+- `etapaProgresso` exposto como getter público no controller
+- `dart analyze` limpo
+
+---
+
+## TASK-019 · 🟢 Baixa · LeituraDetalheScreen — mini-mapa embutido no lugar do link GPS
+
+**Status:** `pending`  
+**Arquivo:** `mobile/lib/features/diagnostico/presentation/pages/leitura_detalhe_screen.dart`
+
+**Contexto:**  
+O GPS da leitura é exibido como um `InfoPill` tappable (link para Google Maps). Uma miniatura de mapa embutida seria mais rica visualmente e mais útil em campo. O `flutter_map` já está no pubspec.
+
+**O que fazer:**
+
+1. Substituir o `GestureDetector + InfoPill` de GPS por um layout que mostra:
+   - Um container de altura ~160px com `FlutterMap` + `MarkerLayer` marcando o ponto
+   - Abaixo do mapa, o `InfoPill` com as coordenadas permanece como link para Google Maps (não remover)
+
+2. O mapa deve usar o mesmo `TileLayer` com OSM e o mesmo cache (`CachedTileProvider`) que `mapa_screen.dart` usa (copiar a configuração).
+
+3. `MapOptions` com `initialCenter = LatLng(l.latitude, l.longitude)` e `initialZoom = 17`.
+
+4. Envolver o `FlutterMap` em `IgnorePointer(child: ...)` para que o mapa não intercepte scroll da tela — ou usar `MapOptions(interactionOptions: InteractionOptions(flags: InteractiveFlag.none))` para desabilitar interação.
+
+5. Só renderizar quando `temGps == true` (já existe essa condição).
+
+**Importações necessárias:** `flutter_map`, `flutter_map_cache`, `latlong2`, `path_provider`, `dio_cache_interceptor_hive_store` — todos já no pubspec.
+
+**Critérios de aceitação:**
+- Mini-mapa aparece no detalhe quando há coordenadas GPS
+- Não é interativo (não captura scroll)
+- Link do InfoPill ainda funciona ao tocar
+- `dart analyze` limpo
+
+---
+
+## TASK-020 · 🟢 Baixa · Testes unitários para agrupamento por role no AdminPage
+
+**Status:** `pending`  
+**Arquivo a criar:** `mobile/test/unit/admin_grouping_test.dart`
+
+**Contexto:**  
+A TASK-011 adicionou lógica de agrupamento (admins / operadores) no AdminPage. Vale cobrir com testes a lógica de separação de listas, filtro de busca por seção e contagem de cada grupo.
+
+**O que fazer:**
+
+Criar `admin_grouping_test.dart` com funções puras que espelham a lógica do AdminPage:
+
+```dart
+List<UserModel> filtrarPorRole(List<UserModel> lista, UserRole role) =>
+    lista.where((u) => u.role == role).toList();
+
+List<UserModel> filtrarPorBusca(List<UserModel> lista, String busca) =>
+    busca.isEmpty ? lista : lista.where((u) =>
+        u.name.toLowerCase().contains(busca.toLowerCase()) ||
+        u.email.toLowerCase().contains(busca.toLowerCase())).toList();
+```
+
+Casos de teste:
+- Lista mista → admins e operadores separados corretamente
+- Busca "joao" → filtra por nome em ambos os grupos
+- Lista só de operadores → seção admins vazia
+- Lista vazia → ambas as seções vazias
+
+**Critérios de aceitação:**
+- `flutter test test/unit/admin_grouping_test.dart` passa
+- Pelo menos 6 `expect()` cobrindo os casos acima
+
+---
+
+_Última atualização pelo planejador: iteração 3 — 2026-08-11_

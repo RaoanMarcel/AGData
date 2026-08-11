@@ -72,4 +72,10 @@ class AppColors {
   static const Color info = Color(0xFF1565C0); // GPS / informações
   static const Color infoContainer = Color(0xFFD9E7F8);
   static const Color danger = Color(0xFFC62828); // ações destrutivas
+
+  // ---------------------------------------------------------------------------
+  // Aviso / Alerta (laranja profundo)
+  // ---------------------------------------------------------------------------
+  static const Color warning = Color(0xFFE65100);
+  static const Color warningContainer = Color(0xFFFBE9E7);
 }

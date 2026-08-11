@@ -40,6 +40,8 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
   DateTime? _dataFiltro;
   String _doencaFiltro = 'Todas';
   double _confiancaFiltro = 0.0;
+  bool _buscaAtiva = false;
+  String _buscaTexto = '';
   final List<String> _opcoesDoenca = [
     'Todas',
     'FERRUGEM',
@@ -134,7 +136,12 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
 
         bool passaConfianca = leitura.confianca >= _confiancaFiltro;
 
-        return passaData && passaDoenca && passaConfianca;
+        bool passaBusca = _buscaTexto.isEmpty ||
+            leitura.talhao
+                .toLowerCase()
+                .contains(_buscaTexto.trim().toLowerCase());
+
+        return passaData && passaDoenca && passaConfianca && passaBusca;
       }).toList();
     });
   }
@@ -383,15 +390,48 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.talhaoInicial == null
-            ? 'Relatórios de campo'
-            : 'Relatórios · ${widget.talhaoInicial}'),
+        title: _buscaAtiva
+            ? TextField(
+                autofocus: true,
+                decoration: const InputDecoration(
+                  hintText: 'Buscar por talhão...',
+                  border: InputBorder.none,
+                  hintStyle: TextStyle(color: Colors.white70),
+                ),
+                style: const TextStyle(color: Colors.white),
+                cursorColor: Colors.white,
+                onChanged: (valor) {
+                  setState(() => _buscaTexto = valor);
+                  _aplicarFiltros();
+                },
+              )
+            : Text(widget.talhaoInicial == null
+                ? 'Relatórios de campo'
+                : 'Relatórios · ${widget.talhaoInicial}'),
         actions: [
           if (_selecionados.isNotEmpty)
             IconButton(
               icon: const Icon(Icons.delete_outline, color: AppColors.danger),
               tooltip: 'Excluir selecionados',
               onPressed: _confirmarExclusao,
+            ),
+          if (!_buscaAtiva)
+            IconButton(
+              icon: const Icon(Icons.search),
+              tooltip: 'Buscar por talhão',
+              onPressed: () => setState(() => _buscaAtiva = true),
+            ),
+          if (_buscaAtiva)
+            IconButton(
+              icon: const Icon(Icons.close),
+              tooltip: 'Fechar busca',
+              onPressed: () {
+                setState(() {
+                  _buscaAtiva = false;
+                  _buscaTexto = '';
+                });
+                _aplicarFiltros();
+              },
             ),
           IconButton(
             icon: const Icon(Icons.filter_list),
@@ -402,7 +442,7 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
             icon: const Icon(Icons.share_outlined),
             tooltip: 'Enviar via WhatsApp',
             onPressed: _selecionados.isEmpty ? null : _enviarRelatorioWhatsApp,
-          )
+          ),
         ],
       ),
       body: Column(

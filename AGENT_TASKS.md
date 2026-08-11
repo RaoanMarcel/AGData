@@ -1389,7 +1389,7 @@ Commit: `feat: exclusão de leituras selecionadas no HistoricoScreen`
 
 ## TASK-035 · 🟡 Média · Busca por texto no HistoricoScreen
 
-**Status:** `pending`  
+**Status:** `done`  
 **Arquivo:** `mobile/lib/features/diagnostico/presentation/pages/historico_screen.dart`
 
 **Contexto:**  

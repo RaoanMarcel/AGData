@@ -374,7 +374,7 @@ final operadores = _usuarios.where((u) => u.role == UserRole.operador).toList();
 
 ## TASK-012 · 🟡 Média · HomeDashboard — contador de leituras pendentes de sync
 
-**Status:** `pending`  
+**Status:** `done`  
 **Arquivo:** `mobile/lib/features/diagnostico/presentation/pages/home_dashboard_screen.dart`
 
 **Contexto:**  

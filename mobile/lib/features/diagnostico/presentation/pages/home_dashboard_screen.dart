@@ -37,7 +37,9 @@ class HomeDashboardScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const ClimaCard(),
-                  const SizedBox(height: AppSpacing.xl),
+                  const SizedBox(height: AppSpacing.md),
+                  const _PendentesBanner(),
+                  const SizedBox(height: AppSpacing.md),
                   _MapControlCard(onTap: () => _ir(context, const MapaScreen())),
                   const SizedBox(height: AppSpacing.xl),
                   Text('Ações rápidas',
@@ -208,6 +210,35 @@ class _MalhaMapaPainter extends CustomPainter {
   @override
   bool shouldRepaint(_MalhaMapaPainter oldDelegate) =>
       oldDelegate.color != color;
+}
+
+/// Banner de leituras pendentes de sync — visível apenas quando há pendentes.
+class _PendentesBanner extends StatelessWidget {
+  const _PendentesBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<int>(
+      future: DatabaseService().contarLeiturasPendentes(),
+      builder: (context, snapshot) {
+        final pendentes = snapshot.data ?? 0;
+        if (pendentes == 0) return const SizedBox.shrink();
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+          child: Card(
+            color: AppColors.syncPending.withValues(alpha: 0.15),
+            child: ListTile(
+              leading: const Icon(Icons.cloud_upload_outlined, color: AppColors.syncPending),
+              title: Text('$pendentes leitura(s) aguardando sincronização'),
+              trailing: const Icon(Icons.chevron_right, size: 18),
+              dense: true,
+              onTap: () {},
+            ),
+          ),
+        );
+      },
+    );
+  }
 }
 
 /// Seção "Atividade recente" no dashboard — exibe as 3 leituras mais recentes.

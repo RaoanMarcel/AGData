@@ -1301,7 +1301,7 @@ Commit: `perf: _UltimasLeituras usa buscarLeiturasPaginadas ao invés de carrega
 
 ## TASK-034 · 🔴 Alta · Exclusão de leituras selecionadas no HistoricoScreen
 
-**Status:** `pending`  
+**Status:** `done`  
 **Arquivos:**
 - `mobile/lib/features/diagnostico/data/datasources/database_service.dart`
 - `mobile/lib/features/diagnostico/presentation/pages/historico_screen.dart`

@@ -47,6 +47,12 @@ class DatabaseService {
     });
   }
 
+  Future<void> deletarLeituras(List<int> ids) async {
+    await isar.writeTxn(() async {
+      await isar.leituraModels.deleteAll(ids);
+    });
+  }
+
   /// Quantidade de leituras ainda não sincronizadas com a nuvem.
   Future<int> contarLeiturasPendentes() async {
     return await isar.leituraModels

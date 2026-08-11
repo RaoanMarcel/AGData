@@ -338,6 +338,44 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
     }
   }
 
+  Future<void> _confirmarExclusao() async {
+    final n = _selecionados.length;
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Excluir leituras?'),
+        content: Text(
+          'Serão excluídas $n leitura(s) deste dispositivo. '
+          'Leituras já sincronizadas com a nuvem não serão afetadas.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.danger,
+              foregroundColor: AppColors.onPrimary,
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Excluir'),
+          ),
+        ],
+      ),
+    );
+    if (confirmar != true || !mounted) return;
+    final ids = List<int>.from(_selecionados);
+    await _databaseService.deletarLeituras(ids);
+    setState(() => _selecionados.clear());
+    await _recarregar();
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('$n leitura(s) excluída(s).')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final grupos = _agruparPorTalhao();
@@ -349,6 +387,12 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
             ? 'Relatórios de campo'
             : 'Relatórios · ${widget.talhaoInicial}'),
         actions: [
+          if (_selecionados.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.delete_outline, color: AppColors.danger),
+              tooltip: 'Excluir selecionados',
+              onPressed: _confirmarExclusao,
+            ),
           IconButton(
             icon: const Icon(Icons.filter_list),
             tooltip: 'Filtrar análises',

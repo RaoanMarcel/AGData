@@ -210,7 +210,7 @@ O dashboard atual tem TopBar + ClimaCard + MapControlCard + 2 action tiles. Falt
 
 ## TASK-007 · 🟡 Média · Testes unitários — lógica pura (formatters, visual, filtros)
 
-**Status:** `pending`  
+**Status:** `done`  
 **Arquivos a criar:**
 - `mobile/test/unit/formatters_test.dart`
 - `mobile/test/unit/diagnostico_visual_test.dart`

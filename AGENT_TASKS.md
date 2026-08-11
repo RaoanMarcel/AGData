@@ -839,4 +839,155 @@ O `RelatorioPage` já usa `lastDate: DateTime.now()` nos date pickers. O `Prescr
 
 ---
 
-_Última atualização pelo planejador: iteração 4 — 2026-08-11_
+---
+
+## TASK-025 · 🔴 Alta · Integrar Sentry nos blocos catch dos controllers e repositories
+
+**Status:** `done`  
+**Arquivos:** `mobile/lib/features/diagnostico/presentation/controllers/home_controller.dart`, `mobile/lib/infra/repositories/sync_repository.dart`
+
+**Contexto:**  
+O Sentry está inicializado em `main.dart` e captura erros globais, mas os blocos `catch` nos controllers/repositories fazem apenas `debugPrint` — erros de produção passam invisíveis para o painel do Sentry.
+
+**O que fazer:**
+
+Import necessário (adicionar se ausente):
+```dart
+import 'package:sentry_flutter/sentry_flutter.dart';
+```
+
+Em `home_controller.dart`, nos blocos catch (linhas ~150 e ~187):
+```dart
+} catch (e, st) {
+  debugPrint('Erro: $e');
+  unawaited(Sentry.captureException(e, stackTrace: st));
+  // ... resto do tratamento existente
+}
+```
+
+Em `sync_repository.dart`, nos blocos catch sem Sentry (linhas ~86 e ~110):
+```dart
+} catch (e, st) {
+  debugPrint('Erro sync: $e');
+  unawaited(Sentry.captureException(e, stackTrace: st));
+  // ... resto do tratamento existente
+}
+```
+
+**Importante:** usar `unawaited(...)` (import `dart:async`) para não aguardar a chamada ao Sentry — não deve bloquear o fluxo. Manter o `debugPrint` existente.
+
+**Critérios de aceitação:**
+- Todos os blocos `catch (e)` relevantes passam a ser `catch (e, st)` com `Sentry.captureException`
+- `dart analyze` limpo
+- Nenhum await adicionado que possa causar delay na UI
+
+---
+
+## TASK-026 · 🔴 Alta · Substituir Colors.white por AppColors.onPrimary/textOnDark no HomeDashboardScreen
+
+**Status:** `pending`  
+**Arquivo:** `mobile/lib/features/diagnostico/presentation/pages/home_dashboard_screen.dart`
+
+**Contexto:**  
+8 ocorrências de `Colors.white` hardcoded no arquivo — todas em elementos sobre o fundo verde (`AppColors.primary`). O token correto é `AppColors.onPrimary` (branco puro) ou `AppColors.textOnDark` (branco para texto), ambos já definidos no design system.
+
+**O que fazer:**
+
+Para cada ocorrência de `Colors.white` no arquivo:
+- Se é **cor de ícone ou texto sobre fundo verde**: usar `AppColors.textOnDark`
+- Se é **cor de fundo translúcido** (`.withValues(alpha: 0.xx)` ou `.withOpacity`): usar `AppColors.onPrimary.withValues(alpha: 0.xx)` (mesmo efeito, semântica correta)
+- Se é **foregroundColor de botão sobre fundo primário**: usar `AppColors.onPrimary`
+
+Verificar também `app_button.dart` linha ~53 (spinner em `ElevatedButton` → `AppColors.onPrimary`) e `prescricao_page.dart` linha ~384 e `relatorio_page.dart` linha ~477 (spinners nos botões de ação → `AppColors.onPrimary`).
+
+**Critérios de aceitação:**
+- Nenhum `Colors.white` hardcoded restante nesses 4 arquivos
+- `dart analyze` limpo
+- Visual idêntico ao anterior
+
+---
+
+## TASK-027 · 🟡 Média · HistoricoScreen — paginação para listas longas
+
+**Status:** `pending`  
+**Arquivos:** `mobile/lib/features/diagnostico/presentation/pages/historico_screen.dart`, `mobile/lib/features/diagnostico/data/datasources/database_service.dart`
+
+**Contexto:**  
+`buscarTodasLeituras()` retorna todos os registros de uma vez. Com 1000+ leituras, a construção da lista e o uso de memória podem ser problemáticos. Implementar carregamento de 50 em 50 com "carregar mais" ao chegar no fim da lista.
+
+**O que fazer:**
+
+1. Em `DatabaseService`, adicionar método com paginação:
+```dart
+Future<List<LeituraModel>> buscarLeiturasPaginadas({
+  int limite = 50,
+  int offset = 0,
+}) async {
+  return await isar.leituraModels
+      .where()
+      .sortByDataHoraDesc()
+      .offset(offset)
+      .limit(limite)
+      .findAll();
+}
+```
+
+2. Em `HistoricoScreen`:
+   - Trocar `_leituras` de carregamento total para carregamento paginado
+   - Adicionar `_pagina = 0`, `_temMais = true`, `_carregandoMais = false`
+   - Adicionar `ScrollController` para detectar chegada ao fim (além do já existente para preservar posição)
+   - Ao chegar a 90% do scroll: chamar `_carregarMais()` que faz `buscarLeiturasPaginadas(offset: _leituras.length)`
+   - Enquanto carrega mais: mostrar `CircularProgressIndicator` no final da lista
+
+3. A busca com filtros ativos (doença, confiança, data) deve continuar funcionando — filtros são aplicados sobre `_leituras` carregados; com paginação, filtrar pode requerer continuar carregando até ter resultados suficientes ou atingir o fim.
+
+**Critérios de aceitação:**
+- Lista carrega apenas 50 leituras inicialmente
+- Ao rolar até o final, carrega mais 50 automaticamente
+- Spinner aparece enquanto carrega mais
+- `dart analyze` limpo
+
+---
+
+## TASK-028 · 🟢 Baixa · HomeScreen — AnimatedSwitcher na transição processando→resultado
+
+**Status:** `pending`  
+**Arquivo:** `mobile/lib/features/diagnostico/presentation/pages/home_screen.dart`
+
+**Contexto:**  
+A transição entre o estado "processando" (spinner + etapas ML) e o estado "revisão de resultado" é abrupta — os widgets trocam instantaneamente. Um `AnimatedSwitcher` suaviza essa transição e dá feedback visual mais profissional.
+
+**O que fazer:**
+
+Localizar o método `_buildEstado()` (ou equivalente) que retorna widgets baseado em `_controller.status`. Envolver o widget retornado em `AnimatedSwitcher`:
+
+```dart
+AnimatedSwitcher(
+  duration: const Duration(milliseconds: 400),
+  transitionBuilder: (child, animation) => FadeTransition(
+    opacity: animation,
+    child: SlideTransition(
+      position: Tween<Offset>(
+        begin: const Offset(0, 0.05),
+        end: Offset.zero,
+      ).animate(animation),
+      child: child,
+    ),
+  ),
+  child: KeyedSubtree(
+    key: ValueKey(_controller.status),
+    child: _buildEstado(_controller.status),
+  ),
+)
+```
+
+A `ValueKey(_controller.status)` garante que o switcher detecta a mudança de estado e anima a transição.
+
+**Critérios de aceitação:**
+- Fade+slide suave de ~400ms na transição entre estados
+- `dart analyze` limpo
+- Sem regressão nos outros estados (erro, inicial)
+
+---
+
+_Última atualização pelo planejador: iteração 5 — 2026-08-11_

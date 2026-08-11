@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 import '../../data/models/leitura_model.dart';
 import '../../data/datasources/classifier.dart';
@@ -147,8 +148,9 @@ class HomeController extends ChangeNotifier {
     } on TimeoutException {
       _falhar('TEMPO ESGOTADO',
           'O processamento demorou mais que o esperado. Tente novamente.');
-    } catch (e) {
+    } catch (e, st) {
       debugPrint("ERRO NO HOME_CONTROLLER: $e");
+      unawaited(Sentry.captureException(e, stackTrace: st));
       _falhar('ERRO NA ANÁLISE', 'Não foi possível processar a imagem.');
     }
   }
@@ -184,8 +186,9 @@ class HomeController extends ChangeNotifier {
       await _databaseService.guardarLeitura(pendente);
       _resetar();
       return true;
-    } catch (e) {
+    } catch (e, st) {
       debugPrint("ERRO AO SALVAR LEITURA: $e");
+      unawaited(Sentry.captureException(e, stackTrace: st));
       _falhar('ERRO AO SALVAR', 'Não foi possível guardar a leitura.');
       return false;
     }

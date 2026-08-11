@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:isar/isar.dart';
 import 'package:flutter/foundation.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import '../services/connectivity_service.dart';
 import '../../features/diagnostico/data/models/leitura_model.dart';
 import '../../core/di/injection_container.dart';
@@ -77,14 +79,16 @@ class SyncRepository {
             await _isar.leituraModels.put(leitura);
           }
         });
-      } catch (e) {
+      } catch (e, st) {
+        unawaited(Sentry.captureException(e, stackTrace: st));
         throw CacheException('Erro ao atualizar backup local no Isar');
       }
       
       await _limparCacheAntigo();
       
-    } catch (e) {
+    } catch (e, st) {
       debugPrint('❌ [SYNC ERROR] $e');
+      unawaited(Sentry.captureException(e, stackTrace: st));
     } finally {
       _isSyncing = false; 
     }
@@ -107,8 +111,9 @@ class SyncRepository {
           debugPrint('♻️ [CACHE] Registros antigos (7+ dias) removidos com sucesso.');
         }
       });
-    } catch (e) {
+    } catch (e, st) {
       debugPrint('⚠️ [CACHE ERROR] Falha ao limpar registros antigos: $e');
+      unawaited(Sentry.captureException(e, stackTrace: st));
     }
   }
 }

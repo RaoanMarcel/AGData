@@ -652,7 +652,7 @@ O GPS da leitura é exibido como um `InfoPill` tappable (link para Google Maps).
 
 ## TASK-020 · 🟢 Baixa · Testes unitários para agrupamento por role no AdminPage
 
-**Status:** `pending`  
+**Status:** `done`  
 **Arquivo a criar:** `mobile/test/unit/admin_grouping_test.dart`
 
 **Contexto:**  

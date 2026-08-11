@@ -2,9 +2,14 @@ import 'package:flutter/material.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_dimens.dart';
+import '../../../../core/utils/formatters.dart';
+import '../../../../core/widgets/diagnostico_badge.dart';
 import '../../../auth/presentation/controller/session_controller.dart';
 import '../../../clima/presentation/clima_card.dart';
+import '../../data/datasources/database_service.dart';
+import '../../data/models/leitura_model.dart';
 import '../widgets/sync_status_button.dart';
+import 'leitura_detalhe_screen.dart';
 import 'selecao_talhao_screen.dart';
 import 'historico_screen.dart';
 import 'mapa_screen.dart';
@@ -52,6 +57,11 @@ class HomeDashboardScreen extends StatelessWidget {
                     subtitle: 'Relatórios e leituras salvas',
                     accent: AppColors.info,
                     onTap: () => _ir(context, const HistoricoScreen()),
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
+                  _UltimasLeituras(
+                    onVerTodas: () => _ir(context, const HistoricoScreen()),
+                    onAbrirDetalhe: (l) => _ir(context, LeituraDetalheScreen(leitura: l)),
                   ),
                 ],
               ),
@@ -198,6 +208,83 @@ class _MalhaMapaPainter extends CustomPainter {
   @override
   bool shouldRepaint(_MalhaMapaPainter oldDelegate) =>
       oldDelegate.color != color;
+}
+
+/// Seção "Atividade recente" no dashboard — exibe as 3 leituras mais recentes.
+class _UltimasLeituras extends StatelessWidget {
+  final VoidCallback onVerTodas;
+  final ValueChanged<LeituraModel> onAbrirDetalhe;
+
+  const _UltimasLeituras({
+    required this.onVerTodas,
+    required this.onAbrirDetalhe,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('Atividade recente',
+                style: Theme.of(context).textTheme.titleMedium),
+            TextButton(
+              onPressed: onVerTodas,
+              child: const Text('Ver todas'),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        FutureBuilder<List<LeituraModel>>(
+          future: DatabaseService().buscarTodasLeituras(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            final todas = snapshot.data ?? [];
+            final recentes = todas.reversed.take(3).toList();
+            if (recentes.isEmpty) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+                child: Text(
+                  'Nenhuma análise ainda.',
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodyMedium
+                      ?.copyWith(color: AppColors.textTertiary),
+                  textAlign: TextAlign.center,
+                ),
+              );
+            }
+            return Column(
+              children: recentes
+                  .map((l) => Card(
+                        margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+                        child: ListTile(
+                          leading: DiagnosticoBadge(
+                              resultado: l.resultadoIA, dense: true),
+                          title: Text(
+                            '${l.talhao} · ${l.resultadoIA}',
+                            style: const TextStyle(
+                                fontWeight: FontWeight.w600, fontSize: 13),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          subtitle: Text(formatarDataHora(l.dataHora),
+                              style: const TextStyle(fontSize: 12)),
+                          trailing: const Icon(Icons.chevron_right,
+                              color: AppColors.textTertiary),
+                          onTap: () => onAbrirDetalhe(l),
+                        ),
+                      ))
+                  .toList(),
+            );
+          },
+        ),
+      ],
+    );
+  }
 }
 
 /// Item de ação em formato de lista (ícone + título + subtítulo + seta).

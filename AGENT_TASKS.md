@@ -173,7 +173,7 @@ O hint do campo "Nova Senha" provavelmente diz "Mínimo 6 dígitos" ou algo gen�
 
 ## TASK-006 · 🟡 Média · Dashboard — adicionar linha de últimas leituras recentes
 
-**Status:** `pending`  
+**Status:** `done`  
 **Arquivo:** `mobile/lib/features/diagnostico/presentation/pages/home_dashboard_screen.dart`
 
 **Contexto:**  

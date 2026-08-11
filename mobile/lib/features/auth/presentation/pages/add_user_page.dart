@@ -193,7 +193,10 @@ class _AddUserPageState extends State<AddUserPage> {
         title: const Text("Novo Acesso"),
         backgroundColor: AppColors.primaryDark,
       ),
-      body: SingleChildScrollView(
+      body: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        behavior: HitTestBehavior.translucent,
+        child: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Form(
           key: _formKey,
@@ -285,6 +288,7 @@ class _AddUserPageState extends State<AddUserPage> {
               ),
             ],
           ),
+        ),
         ),
       ),
     );

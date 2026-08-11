@@ -70,7 +70,10 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
         title: const Text("Recuperar Senha"),
         backgroundColor: AppColors.primaryDark,
       ),
-      body: Padding(
+      body: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        behavior: HitTestBehavior.translucent,
+        child: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Form(
           key: _formKey,
@@ -136,6 +139,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
               const SizedBox(height: 30),
             ],
           ),
+        ),
         ),
       ),
     );

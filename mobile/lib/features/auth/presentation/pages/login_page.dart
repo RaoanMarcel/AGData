@@ -87,7 +87,10 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: Column(
+      body: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        behavior: HitTestBehavior.translucent,
+        child: Column(
         children: [
           StreamBuilder<List<ConnectivityResult>>(
             stream: Connectivity().onConnectivityChanged,
@@ -211,6 +214,7 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ),
         ],
+        ),
       ),
     );
   }

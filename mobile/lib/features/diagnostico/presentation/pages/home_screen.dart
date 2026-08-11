@@ -108,7 +108,7 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Widget> _buildEstado(DiagnosticoStatus status) {
     switch (status) {
       case DiagnosticoStatus.processando:
-        return const [_LoadingCard()];
+        return [_LoadingCard(etapa: _controller.etapaProgresso)];
 
       case DiagnosticoStatus.revisao:
         return [
@@ -237,7 +237,8 @@ class _ImagePreview extends StatelessWidget {
 }
 
 class _LoadingCard extends StatelessWidget {
-  const _LoadingCard();
+  final String etapa;
+  const _LoadingCard({required this.etapa});
 
   @override
   Widget build(BuildContext context) {
@@ -251,8 +252,9 @@ class _LoadingCard extends StatelessWidget {
             Text('Analisando amostra...',
                 style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: AppSpacing.xs),
-            Text('Processando imagem e localização',
-                style: Theme.of(context).textTheme.bodySmall),
+            Text(etapa,
+                style: Theme.of(context).textTheme.bodySmall,
+                textAlign: TextAlign.center),
           ],
         ),
       ),

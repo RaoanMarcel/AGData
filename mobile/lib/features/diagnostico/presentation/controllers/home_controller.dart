@@ -29,6 +29,7 @@ class HomeController extends ChangeNotifier {
   String _localizacaoTexto = '';
   String _mensagemErro = '';
   bool _salvando = false;
+  String _etapaProgresso = 'Preparando análise...';
 
   /// Leitura construída a partir do diagnóstico, ainda não persistida.
   LeituraModel? _leituraPendente;
@@ -40,6 +41,7 @@ class HomeController extends ChangeNotifier {
   String get localizacaoTexto => _localizacaoTexto;
   String get mensagemErro => _mensagemErro;
   bool get salvando => _salvando;
+  String get etapaProgresso => _etapaProgresso;
 
   HomeController() {
     _classifier.loadModel();
@@ -81,6 +83,9 @@ class HomeController extends ChangeNotifier {
 
   Future<void> _processar(File image, String talhao, ImageSource source) async {
     try {
+      _etapaProgresso = 'Consultando IA...';
+      notifyListeners();
+
       final Map<String, dynamic> resultadoIA = await _classifier
           .predict(image)
           .timeout(const Duration(seconds: 30));
@@ -90,6 +95,9 @@ class HomeController extends ChangeNotifier {
       double lat = 0.0;
       double lng = 0.0;
       bool localizacaoObtida = false;
+
+      _etapaProgresso = 'Obtendo localização...';
+      notifyListeners();
 
       if (source == ImageSource.gallery) {
         final coordsMeta = await _metadataService.extrairLocalizacaoDaFoto(image);
@@ -115,6 +123,9 @@ class HomeController extends ChangeNotifier {
             'GPS não detectado. A localização é obrigatória.');
         return;
       }
+
+      _etapaProgresso = 'Salvando resultado...';
+      notifyListeners();
 
       // Constrói a leitura pendente (a imagem só é copiada ao salvar).
       _leituraPendente = LeituraModel()
@@ -192,6 +203,7 @@ class HomeController extends ChangeNotifier {
     _localizacaoTexto = '';
     _mensagemErro = '';
     _salvando = false;
+    _etapaProgresso = 'Preparando análise...';
     notifyListeners();
   }
 }

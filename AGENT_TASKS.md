@@ -578,7 +578,7 @@ if (precipProb != null)
 
 ## TASK-018 · 🟡 Média · HomeScreen — etapas visuais no progresso de análise ML
 
-**Status:** `pending`  
+**Status:** `done`  
 **Arquivos:** `mobile/lib/features/diagnostico/presentation/pages/home_screen.dart`, `mobile/lib/features/diagnostico/presentation/controllers/home_controller.dart`
 
 **Contexto:**  

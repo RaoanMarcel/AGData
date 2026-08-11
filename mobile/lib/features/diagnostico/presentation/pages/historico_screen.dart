@@ -31,6 +31,9 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
   final List<int> _selecionados = [];
   bool _loading = true;
 
+  final ScrollController _scrollController = ScrollController();
+  double _scrollOffset = 0;
+
   // --- VARIÁVEIS DOS FILTROS ---
   DateTime? _dataFiltro;
   String _doencaFiltro = 'Todas';
@@ -48,6 +51,12 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
   void initState() {
     super.initState();
     _carregarDados();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   Future<void> _carregarDados() async {
@@ -211,13 +220,25 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
 
   /// Abre o detalhe da leitura e recarrega a lista ao voltar (após editar/excluir).
   Future<void> _abrirDetalhe(LeituraModel leitura) async {
+    if (_scrollController.hasClients) {
+      _scrollOffset = _scrollController.offset;
+    }
     await Navigator.push(
       context,
       MaterialPageRoute(
           builder: (_) => LeituraDetalheScreen(leitura: leitura)),
     );
     await _carregarDados();
-    if (mounted) _aplicarFiltros();
+    if (mounted) {
+      _aplicarFiltros();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_scrollController.hasClients && _scrollOffset > 0) {
+          _scrollController.jumpTo(
+            _scrollOffset.clamp(0, _scrollController.position.maxScrollExtent),
+          );
+        }
+      });
+    }
   }
 
   void _alternarSelecao(int id) {
@@ -326,6 +347,7 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
                             'Ajuste os filtros ou realize novas leituras no campo.',
                       )
                     : ListView.builder(
+                        controller: _scrollController,
                         padding: const EdgeInsets.all(AppSpacing.lg),
                         itemCount: talhoes.length,
                         itemBuilder: (context, index) {

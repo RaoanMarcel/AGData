@@ -101,7 +101,7 @@ A regex: exige pelo menos 2 chars no TLD, caracteres válidos no local-part e do
 
 ## TASK-004 · 🟡 Média · Preservar posição de scroll ao voltar do detalhe no HistóricoScreen
 
-**Status:** `pending`  
+**Status:** `done`  
 **Arquivo:** `mobile/lib/features/diagnostico/presentation/pages/historico_screen.dart`
 
 **Contexto:**  

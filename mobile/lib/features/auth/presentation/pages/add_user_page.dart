@@ -105,7 +105,7 @@ class _AddUserPageState extends State<AddUserPage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Falha no cadastro: $e'), backgroundColor: Colors.red)
+          SnackBar(content: Text('Falha no cadastro: $e'), backgroundColor: AppColors.danger)
         );
       }
     } finally {
@@ -120,7 +120,7 @@ class _AddUserPageState extends State<AddUserPage> {
       builder: (context) => AlertDialog(
         title: const Row(
           children: [
-            Icon(Icons.check_circle, color: Colors.green),
+            Icon(Icons.check_circle, color: AppColors.syncSuccess),
             SizedBox(width: 8),
             Text('Usuário cadastrado', style: TextStyle(fontWeight: FontWeight.bold)),
           ],
@@ -134,7 +134,7 @@ class _AddUserPageState extends State<AddUserPage> {
             const Text("Senha provisória:", style: TextStyle(fontWeight: FontWeight.bold)),
             Container(
               margin: const EdgeInsets.symmetric(vertical: 8),
-              decoration: BoxDecoration(color: Colors.blueGrey.shade50, borderRadius: BorderRadius.circular(8)),
+              decoration: BoxDecoration(color: AppColors.surfaceVariant, borderRadius: BorderRadius.circular(8)),
               child: Row(
                 children: [
                   Expanded(
@@ -143,7 +143,7 @@ class _AddUserPageState extends State<AddUserPage> {
                       child: SelectableText(
                         senha,
                         textAlign: TextAlign.center,
-                        style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.blueAccent, letterSpacing: 4),
+                        style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.info, letterSpacing: 4),
                       ),
                     ),
                   ),
@@ -168,7 +168,7 @@ class _AddUserPageState extends State<AddUserPage> {
             onPressed: () => _enviarWhatsapp(nome, email, senha, telefone),
             icon: const Icon(Icons.send, size: 18),
             label: const Text("ENVIAR ACESSO"),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
           ),
         ],
       ),
@@ -262,7 +262,7 @@ class _AddUserPageState extends State<AddUserPage> {
                 child: ElevatedButton(
                   onPressed: _carregando ? null : _salvar,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2E7D32),
+                    backgroundColor: AppColors.primary,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   ),
                   child: _carregando 

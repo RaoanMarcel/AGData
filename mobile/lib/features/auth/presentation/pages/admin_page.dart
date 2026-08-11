@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 // Imports baseados na sua estrutura de pastas
 import '../../../../core/di/injection_container.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../data/models/auth_model.dart';
 import '../controller/session_controller.dart';
 import 'add_user_page.dart';
@@ -75,7 +76,7 @@ class _AdminPageState extends State<AdminPage> {
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text("CANCELAR")),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger, foregroundColor: Colors.white),
             onPressed: () async {
               try {
                 await _firestore.collection('users').doc(user.uid).delete();
@@ -111,10 +112,10 @@ class _AdminPageState extends State<AdminPage> {
               final nomeEmpresa = snap.data ?? '...';
               return Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                color: Colors.green.shade50,
+                color: AppColors.primaryContainer,
                 child: Row(
                   children: [
-                    const Icon(Icons.business, color: Color(0xFF2E7D32), size: 20),
+                    const Icon(Icons.business, color: AppColors.primary, size: 20),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Column(
@@ -123,12 +124,12 @@ class _AdminPageState extends State<AdminPage> {
                         children: [
                           Text(
                             nomeEmpresa,
-                            style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1B5E20)),
+                            style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primaryDark),
                             overflow: TextOverflow.ellipsis,
                           ),
                           Text(
                             'Olá, ${_session.usuario?.name ?? ''}',
-                            style: TextStyle(fontSize: 12, color: Colors.green.shade700),
+                            style: const TextStyle(fontSize: 12, color: AppColors.primary),
                           ),
                         ],
                       ),
@@ -199,10 +200,10 @@ class _AdminPageState extends State<AdminPage> {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       child: ListTile(
                         leading: CircleAvatar(
-                          backgroundColor: user.role == UserRole.admin ? Colors.orange.shade100 : Colors.green.shade100,
+                          backgroundColor: user.role == UserRole.admin ? Colors.orange.shade100 : AppColors.primaryContainer,
                           child: Icon(
                             user.role == UserRole.admin ? Icons.admin_panel_settings : Icons.person,
-                            color: user.role == UserRole.admin ? Colors.orange : Colors.green,
+                            color: user.role == UserRole.admin ? Colors.orange : AppColors.primary,
                           ),
                         ),
                         title: Row(
@@ -213,11 +214,11 @@ class _AdminPageState extends State<AdminPage> {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                 decoration: BoxDecoration(
-                                  color: Colors.green.shade100,
+                                  color: AppColors.primaryContainer,
                                   borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: Colors.green.shade300),
+                                  border: Border.all(color: AppColors.primaryLight),
                                 ),
-                                child: Text('Você', style: TextStyle(fontSize: 11, color: Colors.green.shade800, fontWeight: FontWeight.w600)),
+                                child: const Text('Você', style: TextStyle(fontSize: 11, color: AppColors.primaryDark, fontWeight: FontWeight.w600)),
                               ),
                             ],
                           ],
@@ -228,13 +229,13 @@ class _AdminPageState extends State<AdminPage> {
                           children: [
                             if (!isMe)
                               IconButton(
-                                icon: const FaIcon(FontAwesomeIcons.whatsapp, color: Colors.green, size: 20),
+                                icon: const FaIcon(FontAwesomeIcons.whatsapp, color: AppColors.primary, size: 20),
                                 onPressed: () => _enviarAcessoWhatsApp(user),
                                 tooltip: "Enviar Acesso",
                               ),
                             if (!isMe)
                               IconButton(
-                                icon: const Icon(Icons.delete_outline, color: Colors.red, size: 22),
+                                icon: const Icon(Icons.delete_outline, color: AppColors.danger, size: 22),
                                 onPressed: () => _confirmarExclusao(user),
                                 tooltip: "Excluir",
                               ),

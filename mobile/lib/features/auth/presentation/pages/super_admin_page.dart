@@ -139,7 +139,7 @@ class _SuperAdminPageState extends State<SuperAdminPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Falha no cadastro: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.danger,
           ),
         );
       }
@@ -161,7 +161,7 @@ class _SuperAdminPageState extends State<SuperAdminPage> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
         title: const Row(
           children: [
-            Icon(Icons.check_circle, color: Colors.green),
+            Icon(Icons.check_circle, color: AppColors.syncSuccess),
             SizedBox(width: 8),
             Text('Empresa cadastrada', style: TextStyle(fontWeight: FontWeight.bold)),
           ],
@@ -183,7 +183,7 @@ class _SuperAdminPageState extends State<SuperAdminPage> {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               decoration: BoxDecoration(
-                color: Colors.blueGrey.shade50,
+                color: AppColors.surfaceVariant,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
@@ -195,7 +195,7 @@ class _SuperAdminPageState extends State<SuperAdminPage> {
                       style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: Colors.blueAccent,
+                        color: AppColors.info,
                         letterSpacing: 4,
                       ),
                     ),
@@ -225,7 +225,7 @@ class _SuperAdminPageState extends State<SuperAdminPage> {
             icon: const Icon(Icons.send, size: 18),
             label: const Text("ENVIAR ACESSO"),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
+              backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
             ),
           ),
@@ -349,7 +349,7 @@ class _SuperAdminPageState extends State<SuperAdminPage> {
             child: ElevatedButton(
               onPressed: _carregando ? null : _cadastrarTudo,
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF2E7D32),
+                backgroundColor: AppColors.primary,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -380,7 +380,7 @@ class _SuperAdminPageState extends State<SuperAdminPage> {
   Widget _buildCompanyListHeader() {
     return const Row(
       children: [
-        Icon(Icons.list_alt, color: Colors.green),
+        Icon(Icons.list_alt, color: AppColors.primary),
         SizedBox(width: 8),
         Text(
           'EMPRESAS PARCEIRAS',
@@ -420,8 +420,8 @@ class _SuperAdminPageState extends State<SuperAdminPage> {
               margin: const EdgeInsets.symmetric(vertical: 6),
               child: ListTile(
                 leading: const CircleAvatar(
-                  backgroundColor: Color(0xFFE8F5E9),
-                  child: Icon(Icons.agriculture, color: Colors.green),
+                  backgroundColor: AppColors.primaryContainer,
+                  child: Icon(Icons.agriculture, color: AppColors.primary),
                 ),
                 title: Text(
                   company['name'] ?? 'Sem nome',
@@ -468,17 +468,17 @@ class _SuperAdminPageState extends State<SuperAdminPage> {
                 'Adm: $nome',
                 style: const TextStyle(
                   fontSize: 12,
-                  color: Colors.blueGrey,
+                  color: AppColors.textSecondary,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               Text(
                 'Email: $email',
-                style: const TextStyle(fontSize: 12, color: Colors.blueGrey),
+                style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
               ),
               Text(
                 'Whats: $phone',
-                style: const TextStyle(fontSize: 12, color: Colors.blueGrey),
+                style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
               ),
             ],
           );

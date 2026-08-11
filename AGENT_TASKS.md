@@ -2056,7 +2056,7 @@ Commit: `feat: Sentry nos catch blocks restantes do HistoricoScreen e sync_repos
 
 ## TASK-044 · 🟡 Média · Unit test para geração de texto do relatório WhatsApp
 
-**Status:** `pending`  
+**Status:** `done`  
 **Arquivo novo:** `mobile/test/unit/whatsapp_report_test.dart`
 
 **Contexto:**  

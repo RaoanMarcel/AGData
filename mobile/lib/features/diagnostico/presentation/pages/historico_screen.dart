@@ -350,7 +350,8 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
         throw Exception('Não foi possível abrir o link');
       }
       setState(() => _selecionados.clear());
-    } catch (e) {
+    } catch (e, st) {
+      unawaited(Sentry.captureException(e, stackTrace: st));
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Erro ao abrir o WhatsApp.")),

@@ -2019,7 +2019,7 @@ Commit: `feat: tratamento de erro e estado de retry no HistoricoScreen`
 
 ## TASK-043 · 🟡 Média · Sentry nos catch blocks restantes — HistoricoScreen e SyncRepository
 
-**Status:** `pending`  
+**Status:** `done`  
 **Arquivos:**
 - `mobile/lib/features/diagnostico/presentation/pages/historico_screen.dart`
 - `mobile/lib/infra/repositories/sync_repository.dart`

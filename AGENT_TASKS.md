@@ -1040,7 +1040,7 @@ Future<void> _recarregar() async {
 
 ## TASK-030 · 🔴 Alta · Pull-to-refresh no HomeDashboard
 
-**Status:** `pending`  
+**Status:** `done`  
 **Arquivo:** `mobile/lib/features/diagnostico/presentation/pages/home_dashboard_screen.dart`
 
 **Contexto:**  

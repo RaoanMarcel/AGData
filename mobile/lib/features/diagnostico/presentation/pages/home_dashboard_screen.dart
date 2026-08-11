@@ -17,11 +17,23 @@ import 'mapa_screen.dart';
 /// Tela inicial do AGdata — barra de marca fixa, acesso principal ao mapa
 /// (central de controle) e demais ações em lista. Menu lateral reservado
 /// para dados futuros de usuário/empresa.
-class HomeDashboardScreen extends StatelessWidget {
+class HomeDashboardScreen extends StatefulWidget {
   const HomeDashboardScreen({super.key});
 
-  void _ir(BuildContext context, Widget tela) {
+  @override
+  State<HomeDashboardScreen> createState() => _HomeDashboardScreenState();
+}
+
+class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
+  int _refreshKey = 0;
+
+  void _ir(Widget tela) {
     Navigator.push(context, MaterialPageRoute(builder: (_) => tela));
+  }
+
+  Future<void> _recarregar() async {
+    setState(() => _refreshKey++);
+    await Future.delayed(const Duration(milliseconds: 500));
   }
 
   @override
@@ -31,41 +43,45 @@ class HomeDashboardScreen extends StatelessWidget {
         children: [
           const _TopBar(),
           Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(AppSpacing.xl),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const ClimaCard(),
-                  const SizedBox(height: AppSpacing.md),
-                  const _PendentesBanner(),
-                  const SizedBox(height: AppSpacing.md),
-                  _MapControlCard(onTap: () => _ir(context, const MapaScreen())),
-                  const SizedBox(height: AppSpacing.xl),
-                  Text('Ações rápidas',
-                      style: Theme.of(context).textTheme.titleMedium),
-                  const SizedBox(height: AppSpacing.md),
-                  _ActionTile(
-                    icon: Icons.center_focus_strong_outlined,
-                    title: 'Nova Análise',
-                    subtitle: 'Capturar e diagnosticar uma amostra',
-                    accent: AppColors.primary,
-                    onTap: () => _ir(context, const SelecaoTalhaoScreen()),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  _ActionTile(
-                    icon: Icons.history,
-                    title: 'Histórico',
-                    subtitle: 'Relatórios e leituras salvas',
-                    accent: AppColors.info,
-                    onTap: () => _ir(context, const HistoricoScreen()),
-                  ),
-                  const SizedBox(height: AppSpacing.xl),
-                  _UltimasLeituras(
-                    onVerTodas: () => _ir(context, const HistoricoScreen()),
-                    onAbrirDetalhe: (l) => _ir(context, LeituraDetalheScreen(leitura: l)),
-                  ),
-                ],
+            child: RefreshIndicator(
+              onRefresh: _recarregar,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(AppSpacing.xl),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    ClimaCard(key: ValueKey('clima_$_refreshKey')),
+                    const SizedBox(height: AppSpacing.md),
+                    _PendentesBanner(key: ValueKey('pendentes_$_refreshKey')),
+                    const SizedBox(height: AppSpacing.md),
+                    _MapControlCard(onTap: () => _ir(const MapaScreen())),
+                    const SizedBox(height: AppSpacing.xl),
+                    Text('Ações rápidas',
+                        style: Theme.of(context).textTheme.titleMedium),
+                    const SizedBox(height: AppSpacing.md),
+                    _ActionTile(
+                      icon: Icons.center_focus_strong_outlined,
+                      title: 'Nova Análise',
+                      subtitle: 'Capturar e diagnosticar uma amostra',
+                      accent: AppColors.primary,
+                      onTap: () => _ir(const SelecaoTalhaoScreen()),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    _ActionTile(
+                      icon: Icons.history,
+                      title: 'Histórico',
+                      subtitle: 'Relatórios e leituras salvas',
+                      accent: AppColors.info,
+                      onTap: () => _ir(const HistoricoScreen()),
+                    ),
+                    const SizedBox(height: AppSpacing.xl),
+                    _UltimasLeituras(
+                      onVerTodas: () => _ir(const HistoricoScreen()),
+                      onAbrirDetalhe: (l) => _ir(LeituraDetalheScreen(leitura: l)),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -214,7 +230,7 @@ class _MalhaMapaPainter extends CustomPainter {
 
 /// Banner de leituras pendentes de sync — visível apenas quando há pendentes.
 class _PendentesBanner extends StatelessWidget {
-  const _PendentesBanner();
+  const _PendentesBanner({super.key});
 
   @override
   Widget build(BuildContext context) {

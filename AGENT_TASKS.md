@@ -684,4 +684,159 @@ Casos de teste:
 
 ---
 
-_Última atualização pelo planejador: iteração 3 — 2026-08-11_
+---
+
+## TASK-021 · 🟡 Média · ClimaCard — adicionar sensação térmica (apparent_temperature)
+
+**Status:** `done`  
+**Arquivos:** `mobile/lib/features/clima/data/clima_service.dart`, `mobile/lib/features/clima/presentation/clima_card.dart`
+
+**Contexto:**  
+O card já mostra temperatura, umidade, vento e prob. de chuva (TASK-017). Para trabalhadores de campo, a sensação térmica (`apparent_temperature`) é mais relevante que a temperatura real — indica quanto calor/frio o corpo sente considerando vento e umidade.
+
+**O que fazer:**
+
+1. Em `clima_service.dart`, adicionar `apparent_temperature` à lista de parâmetros `hourly` da URL (verificar como os outros parâmetros hourly são passados). Pegar o valor do índice da hora atual.
+
+2. No modelo de clima, adicionar:
+```dart
+final double? sensacaoTermica;
+```
+
+3. No parser JSON, extrair `hourly['apparent_temperature'][horaAtual]`.
+
+4. Em `clima_card.dart`, exibir abaixo da temperatura principal:
+```dart
+if (sensacao != null)
+  Text(
+    'Sensação ${sensacao.toStringAsFixed(0)}°C',
+    style: textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+  )
+```
+
+**Critérios de aceitação:**
+- "Sensação X°C" aparece no card quando API retorna o dado
+- Se null, não aparece (sem crash)
+- `dart analyze` limpo
+
+---
+
+## TASK-022 · 🟡 Média · PrescricaoPage — exibir estatísticas de cobertura GPS antes de exportar
+
+**Status:** `done`  
+**Arquivo:** `mobile/lib/features/prescricao/presentation/pages/prescricao_page.dart`
+
+**Contexto:**  
+Após calcular a grade (`_grade != null`), o usuário não sabe quantas células têm dados reais de leitura vs. quantas foram interpoladas. Uma linha de estatísticas torna o mapa de prescrição mais transparente.
+
+**O que fazer:**
+
+1. Após o widget de mapa de prescrição (`PrescricaoMapWidget`), adicionar um `Card` com estatísticas da grade:
+
+```dart
+// Calcular antes de renderizar:
+final totalCelulas = _grade!.length;
+final celulasComDados = _grade!.where((c) => c.temLeitura).length; // verificar propriedade real
+final cobertura = (celulasComDados / totalCelulas * 100).round();
+```
+
+2. Exibir:
+```dart
+_InfoStatRow(
+  label: 'Células na grade',
+  valor: '$totalCelulas',
+),
+_InfoStatRow(
+  label: 'Com dados GPS',
+  valor: '$celulasComDados ($cobertura%)',
+  valorColor: cobertura < 30 ? AppColors.warning : AppColors.syncSuccess,
+),
+```
+
+3. Se cobertura < 30%, adicionar aviso sutil:
+```dart
+if (cobertura < 30)
+  Padding(
+    padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+    child: Text(
+      'Cobertura baixa — considere fazer mais leituras para melhorar a precisão.',
+      style: textTheme.bodySmall?.copyWith(color: AppColors.warning),
+    ),
+  ),
+```
+
+**Observação:** Inspecionar o modelo da célula de grade (`PrescricaoCell` ou equivalente) para encontrar o campo/propriedade que indica se a célula tem leitura real ou foi interpolada. Adaptar conforme necessário.
+
+**Critérios de aceitação:**
+- Estatísticas de cobertura aparecem quando `_grade != null`
+- Aviso aparece quando cobertura < 30%
+- `dart analyze` limpo
+
+---
+
+## TASK-023 · 🟡 Média · Testes unitários para filtros do HistoricoScreen
+
+**Status:** `done`  
+**Arquivo a criar:** `mobile/test/unit/historico_filter_test.dart`
+
+**Contexto:**  
+O `HistoricoScreen` tem filtros por doença, confiança mínima e intervalo de datas. Essa lógica de filtragem deve ser coberta por testes unitários independentes da UI.
+
+**O que fazer:**
+
+Criar `historico_filter_test.dart` extraindo a lógica de filtro como função pura testável:
+
+```dart
+List<LeituraModel> filtrarLeituras(
+  List<LeituraModel> todas, {
+  String? doenca,
+  double? confiancaMin,
+  DateTime? dataInicio,
+  DateTime? dataFim,
+}) {
+  return todas.where((l) {
+    if (doenca != null && l.resultadoIA != doenca) return false;
+    if (confiancaMin != null && l.confianca < confiancaMin) return false;
+    if (dataInicio != null && l.dataHora.isBefore(dataInicio)) return false;
+    if (dataFim != null && l.dataHora.isAfter(dataFim)) return false;
+    return true;
+  }).toList();
+}
+```
+
+Casos de teste:
+- Filtro por doença "FERRUGEM" → retorna só leituras com esse resultado
+- Filtro por confiança ≥ 0.8 → exclui leituras com confiança < 0.8
+- Filtro por data → exclui leituras fora do intervalo
+- Combinação de filtros → interseção dos critérios
+- Sem filtros → retorna todas
+- Lista vazia com filtros → retorna lista vazia
+
+**Critérios de aceitação:**
+- `flutter test test/unit/historico_filter_test.dart` passa
+- Pelo menos 8 test cases
+
+---
+
+## TASK-024 · 🟢 Baixa · Verificar e corrigir lastDate nos date pickers do PrescricaoPage
+
+**Status:** `done`  
+**Arquivo:** `mobile/lib/features/prescricao/presentation/pages/prescricao_page.dart`
+
+**Contexto:**  
+O `RelatorioPage` já usa `lastDate: DateTime.now()` nos date pickers. O `PrescricaoPage` pode não ter essa proteção, permitindo selecionar datas futuras que nunca terão leituras.
+
+**O que fazer:**
+
+1. Buscar `showDatePicker` ou `showDateRangePicker` em `prescricao_page.dart`
+2. Verificar se `lastDate` está setado para `DateTime.now()`
+3. Se não estiver, adicionar `lastDate: DateTime.now()` a todos os pickers de data
+4. Verificar também `firstDate` — deve ser `DateTime(2023)` ou similar (não `DateTime(1900)`)
+
+**Critérios de aceitação:**
+- `lastDate: DateTime.now()` presente em todos os date pickers do arquivo
+- `dart analyze` limpo
+
+---
+
+_Última atualização pelo planejador: iteração 4 — 2026-08-11_

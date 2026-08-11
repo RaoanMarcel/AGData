@@ -174,6 +174,12 @@ class _ClimaCardState extends State<ClimaCard> {
                 Text('${clima.temperatura.round()}°C',
                     style: textTheme.displaySmall),
                 Text(info.descricao, style: textTheme.bodyMedium),
+                if (clima.sensacaoTermica != null)
+                  Text(
+                    'Sensação ${clima.sensacaoTermica!.toStringAsFixed(0)}°C',
+                    style: textTheme.bodySmall
+                        ?.copyWith(color: AppColors.textSecondary),
+                  ),
               ],
             ),
             const Spacer(),

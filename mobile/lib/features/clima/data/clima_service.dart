@@ -10,6 +10,7 @@ class ClimaAtual {
   final int codigo;
   final List<PrevisaoDia> previsao;
   final int? precipProbMax; // 0-100 (probabilidade de chuva hoje)
+  final double? sensacaoTermica; // apparent_temperature na hora atual
 
   ClimaAtual({
     required this.temperatura,
@@ -18,6 +19,7 @@ class ClimaAtual {
     required this.codigo,
     required this.previsao,
     this.precipProbMax,
+    this.sensacaoTermica,
   });
 }
 
@@ -49,6 +51,7 @@ class ClimaService {
       'https://api.open-meteo.com/v1/forecast'
       '?latitude=$lat&longitude=$lon'
       '&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m'
+      '&hourly=apparent_temperature'
       '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max'
       '&timezone=auto&forecast_days=4',
     );
@@ -61,6 +64,7 @@ class ClimaService {
     final json = jsonDecode(resp.body) as Map<String, dynamic>;
     final current = json['current'] as Map<String, dynamic>;
     final daily = json['daily'] as Map<String, dynamic>;
+    final hourly = json['hourly'] as Map<String, dynamic>?;
 
     final tempos = (daily['time'] as List).cast<String>();
     final codigos = (daily['weather_code'] as List).cast<num>();
@@ -83,6 +87,19 @@ class ClimaService {
         ? (precipProbs[0] as num?)?.toInt()
         : null;
 
+    // Sensação térmica da hora atual via dados hourly.
+    double? sensacaoTermica;
+    if (hourly != null) {
+      final aparentList = hourly['apparent_temperature'] as List?;
+      if (aparentList != null && aparentList.isNotEmpty) {
+        // O índice da hora atual corresponde à hora local (0-23 da primeira rodada).
+        final horaAtual = DateTime.now().hour;
+        if (horaAtual < aparentList.length) {
+          sensacaoTermica = (aparentList[horaAtual] as num?)?.toDouble();
+        }
+      }
+    }
+
     return ClimaAtual(
       temperatura: (current['temperature_2m'] as num).toDouble(),
       umidade: (current['relative_humidity_2m'] as num).toDouble(),
@@ -90,6 +107,7 @@ class ClimaService {
       codigo: (current['weather_code'] as num).toInt(),
       previsao: previsao,
       precipProbMax: precipProbMax,
+      sensacaoTermica: sensacaoTermica,
     );
   }
 

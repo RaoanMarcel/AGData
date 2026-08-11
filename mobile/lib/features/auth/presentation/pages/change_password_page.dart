@@ -135,14 +135,15 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                       onChanged: (_) => setState(() {}),
                       decoration: InputDecoration(
                         labelText: "Nova Senha *",
-                        hintText: "Mínimo 6 caracteres",
+                        hintText: "Mínimo 8 caracteres",
+                        helperText: "Mínimo 8 caracteres",
                         prefixIcon: const Icon(Icons.vpn_key_outlined),
                         suffixIcon: IconButton(
                           icon: Icon(_senhaVisivel ? Icons.visibility : Icons.visibility_off),
                           onPressed: () => setState(() => _senhaVisivel = !_senhaVisivel),
                         ),
                       ),
-                      validator: (v) => (v == null || v.length < 6) ? "Senha muito curta" : null,
+                      validator: (v) => (v == null || v.length < 8) ? "Mínimo 8 caracteres" : null,
                     ),
                     if (_novaSenhaController.text.isNotEmpty) ...[
                       const SizedBox(height: 8),
@@ -205,7 +206,7 @@ class _ForcaSenhaBar extends StatelessWidget {
   const _ForcaSenhaBar({required this.senha});
 
   int _calcularForca() {
-    if (senha.length < 6) return 1;
+    if (senha.length < 8) return 1;
     int p = 1;
     if (senha.length >= 8) p++;
     if (RegExp(r'[A-Z]').hasMatch(senha) && RegExp(r'[0-9]').hasMatch(senha)) p++;

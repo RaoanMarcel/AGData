@@ -149,7 +149,7 @@ WidgetsBinding.instance.addPostFrameCallback((_) {
 
 ## TASK-005 · 🟢 Baixa · Melhorar hint de senha na ChangePasswordPage
 
-**Status:** `pending`  
+**Status:** `done`  
 **Arquivo:** `mobile/lib/features/auth/presentation/pages/change_password_page.dart`
 
 **Contexto:**  

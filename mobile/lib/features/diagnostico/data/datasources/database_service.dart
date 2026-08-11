@@ -72,6 +72,11 @@ class DatabaseService {
         .count();
   }
 
+  /// Contagem total de leituras sem carregar os objetos em memória.
+  Future<int> contarTodasLeituras() async {
+    return await isar.leituraModels.count();
+  }
+
   // --- FUNÇÕES PARA TALHÕES (ÁREAS DA FAZENDA) ---
 
   Future<void> guardarTalhao(TalhaoModel talhao) async {

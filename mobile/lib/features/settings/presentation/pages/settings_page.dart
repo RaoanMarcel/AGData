@@ -29,11 +29,11 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _carregarDados() async {
-    final todas = await _db.buscarTodasLeituras();
+    final total = await _db.contarTodasLeituras();
     final pendentes = await _db.contarLeiturasPendentes();
     if (!mounted) return;
     setState(() {
-      _totalLeituras = todas.length;
+      _totalLeituras = total;
       _pendentes = pendentes;
     });
   }

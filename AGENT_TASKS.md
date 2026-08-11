@@ -1890,4 +1890,280 @@ Commit: `test: testes unitários para lógica de filtro do RelatorioPage`
 
 ---
 
-_Última atualização pelo planejador: iteração 8 — 2026-08-11_
+---
+
+## TASK-041 · 🔴 Alta · DatabaseService.contarTodasLeituras() — evitar carregar tudo só para contar
+
+**Status:** `done`  
+**Arquivos:**
+- `mobile/lib/features/diagnostico/data/datasources/database_service.dart`
+- `mobile/lib/features/settings/presentation/pages/settings_page.dart`
+
+**Contexto:**  
+`SettingsPage._carregarDados()` faz `await _db.buscarTodasLeituras()` só para pegar `.length`. Isso carrega todos os objetos em memória para descobrir a contagem — exatamente o que o Isar tem `.count()` para evitar.
+
+**O que fazer:**
+
+**1. Em `DatabaseService`**, adicionar método de contagem eficiente após `contarLeiturasPendentes()`:
+```dart
+Future<int> contarTodasLeituras() async {
+  return await isar.leituraModels.count();
+}
+```
+**Verificar** que `isar.leituraModels.count()` existe na versão do Isar usada (Isar 3.x tem isso). Se não existir, usar:
+```dart
+return await isar.leituraModels.where().count();
+```
+
+**2. Em `SettingsPage._carregarDados()`**, substituir:
+```dart
+// ANTES:
+final todas = await _db.buscarTodasLeituras();
+// ...
+_totalLeituras = todas.length;
+
+// DEPOIS:
+final total = await _db.contarTodasLeituras();
+// ...
+_totalLeituras = total;
+```
+
+`dart analyze mobile` → sem erros.  
+Commit: `perf: SettingsPage usa contarTodasLeituras() ao invés de carregar tudo para contar`
+
+---
+
+## TASK-042 · 🔴 Alta · HistoricoScreen — tratamento de erro em _carregarDados()
+
+**Status:** `pending`  
+**Arquivo:** `mobile/lib/features/diagnostico/presentation/pages/historico_screen.dart`
+
+**Contexto:**  
+`_carregarDados()` e `_carregarMais()` não têm try/catch. Se o Isar falhar (disco cheio, corrupção), o app fica preso com `_loading = true` ou `_carregandoMais = true` indefinidamente, sem mensagem para o usuário.
+
+**O que fazer:**
+
+**1. Adicionar variável de estado de erro:**
+```dart
+bool _erro = false;
+```
+
+**2. Em `_carregarDados()`**, envolver em try/catch:
+```dart
+Future<void> _carregarDados() async {
+  setState(() => _erro = false);
+  try {
+    var dados = await _databaseService.buscarLeiturasPaginadas(limite: 50, offset: 0);
+    if (widget.talhaoInicial != null) {
+      dados = dados.where((l) => l.talhao == widget.talhaoInicial).toList();
+    }
+    if (mounted) {
+      setState(() {
+        _todasLeituras = dados;
+        _leiturasFiltradas = List.from(_todasLeituras);
+        _temMais = dados.length == 50;
+        _loading = false;
+      });
+    }
+  } catch (e, st) {
+    unawaited(Sentry.captureException(e, stackTrace: st));
+    if (mounted) setState(() { _loading = false; _erro = true; });
+  }
+}
+```
+
+Adicionar imports:
+```dart
+import 'dart:async';
+import 'package:sentry_flutter/sentry_flutter.dart';
+```
+
+**3. Em `_carregarMais()`**, envolver o corpo em try/catch também:
+```dart
+} catch (e, st) {
+  unawaited(Sentry.captureException(e, stackTrace: st));
+  if (mounted) setState(() => _carregandoMais = false);
+}
+```
+
+**4. No `build()`, quando `_erro == true`** (e não loading), mostrar um widget de erro com retry em vez de lista vazia:
+```dart
+: _erro
+    ? Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.error_outline, size: 48, color: AppColors.danger),
+            const SizedBox(height: AppSpacing.md),
+            Text('Erro ao carregar leituras',
+                style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: AppSpacing.sm),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.refresh),
+              label: const Text('Tentar novamente'),
+              onPressed: () {
+                setState(() { _loading = true; _erro = false; });
+                _carregarDados();
+              },
+            ),
+          ],
+        ),
+      )
+    : RefreshIndicator( ... ) // lista normal
+```
+
+`dart analyze mobile` → sem erros.  
+Commit: `feat: tratamento de erro e estado de retry no HistoricoScreen`
+
+---
+
+## TASK-043 · 🟡 Média · Sentry nos catch blocks restantes — HistoricoScreen e SyncRepository
+
+**Status:** `pending`  
+**Arquivos:**
+- `mobile/lib/features/diagnostico/presentation/pages/historico_screen.dart`
+- `mobile/lib/infra/repositories/sync_repository.dart`
+
+**Contexto:**  
+`HistoricoScreen._enviarRelatorioWhatsApp()` tem `catch (e)` que mostra SnackBar sem reportar ao Sentry. `sync_repository.dart` pode ter catch blocks adicionados na TASK-025 — verificar se todos os catch blocks foram instrumentados (pode ter perdido algum).
+
+**O que fazer:**
+
+**Em `historico_screen.dart` — `_enviarRelatorioWhatsApp()` (linha ~334):**
+
+Verificar o catch existente e converter para:
+```dart
+} catch (e, st) {
+  unawaited(Sentry.captureException(e, stackTrace: st));
+  if (mounted) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Erro ao abrir o WhatsApp.")),
+    );
+  }
+}
+```
+
+**Em `sync_repository.dart`:**
+
+Ler o arquivo e verificar se existem catch blocks sem `Sentry.captureException`. A TASK-025 adicionou Sentry em alguns, mas pode ter perdido. Para cada catch sem Sentry, adicionar.
+
+Se os imports já existem (da TASK-025), não adicionar duplicados.
+
+`dart analyze mobile` → sem erros.  
+Commit: `feat: Sentry nos catch blocks restantes do HistoricoScreen e sync_repository`
+
+---
+
+## TASK-044 · 🟡 Média · Unit test para geração de texto do relatório WhatsApp
+
+**Status:** `pending`  
+**Arquivo novo:** `mobile/test/unit/whatsapp_report_test.dart`
+
+**Contexto:**  
+`HistoricoScreen._enviarRelatorioWhatsApp()` constrói um StringBuffer com formatação específica. Extraindo essa lógica como função pura, podemos garantir que o formato não quebra com mudanças futuras.
+
+**O que fazer:**
+
+Criar `mobile/test/unit/whatsapp_report_test.dart`:
+
+```dart
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mobile/features/diagnostico/data/models/leitura_model.dart';
+import 'package:mobile/core/utils/formatters.dart';
+
+/// Espelho da lógica de geração de texto do _enviarRelatorioWhatsApp
+String gerarTextoRelatorio(List<LeituraModel> itens) {
+  final sb = StringBuffer();
+  sb.writeln('📊 *Relatório AGdata - Inspeção de Campo*');
+  sb.writeln('⚠️ *Atenção:* ${itens.length} registro(s) selecionado(s).\n');
+
+  for (int i = 0; i < itens.length; i++) {
+    final item = itens[i];
+    sb.writeln('*Foco ${i + 1} - ${item.resultadoIA}*');
+    sb.writeln('Talhão: ${item.talhao}');
+    sb.writeln('Precisão: ${(item.confianca * 100).toStringAsFixed(1)}%');
+    if (item.observacao.trim().isNotEmpty) {
+      sb.writeln('Obs.: ${item.observacao.trim()}');
+    }
+  }
+  sb.writeln('Aguardando orientações de manejo. 🚜');
+  return sb.toString();
+}
+
+LeituraModel _make({
+  required String talhao,
+  required String resultado,
+  required double confianca,
+  String obs = '',
+}) {
+  return LeituraModel()
+    ..talhao = talhao
+    ..resultadoIA = resultado
+    ..confianca = confianca
+    ..observacao = obs
+    ..dataHora = DateTime(2024, 6, 15)
+    ..caminhoImagem = '/fake/path.jpg'
+    ..latitude = -22.0
+    ..longitude = -47.0;
+}
+
+void main() {
+  group('gerarTextoRelatorio', () {
+    test('texto inclui cabeçalho padrão', () {
+      final texto = gerarTextoRelatorio([]);
+      expect(texto, contains('Relatório AGdata'));
+      expect(texto, contains('Inspeção de Campo'));
+    });
+
+    test('texto inclui contagem correta de registros', () {
+      final leituras = [
+        _make(talhao: 'T1', resultado: 'FERRUGEM', confianca: 0.95),
+        _make(talhao: 'T2', resultado: 'SAUDÁVEL', confianca: 0.88),
+      ];
+      final texto = gerarTextoRelatorio(leituras);
+      expect(texto, contains('2 registro(s)'));
+    });
+
+    test('cada leitura tem número de foco sequencial', () {
+      final leituras = [
+        _make(talhao: 'T1', resultado: 'FERRUGEM', confianca: 0.9),
+        _make(talhao: 'T2', resultado: 'OÍDIO', confianca: 0.8),
+      ];
+      final texto = gerarTextoRelatorio(leituras);
+      expect(texto, contains('Foco 1 - FERRUGEM'));
+      expect(texto, contains('Foco 2 - OÍDIO'));
+    });
+
+    test('precisão é formatada com 1 casa decimal', () {
+      final leituras = [_make(talhao: 'T1', resultado: 'FERRUGEM', confianca: 0.956)];
+      final texto = gerarTextoRelatorio(leituras);
+      expect(texto, contains('95.6%'));
+    });
+
+    test('observação é incluída quando não vazia', () {
+      final leituras = [_make(talhao: 'T1', resultado: 'FERRUGEM', confianca: 0.9, obs: 'Urgente')];
+      final texto = gerarTextoRelatorio(leituras);
+      expect(texto, contains('Obs.: Urgente'));
+    });
+
+    test('observação é omitida quando vazia', () {
+      final leituras = [_make(talhao: 'T1', resultado: 'SAUDÁVEL', confianca: 0.9)];
+      final texto = gerarTextoRelatorio(leituras);
+      expect(texto, isNot(contains('Obs.:')));
+    });
+
+    test('lista vazia não quebra e inclui rodapé', () {
+      final texto = gerarTextoRelatorio([]);
+      expect(texto, contains('Aguardando orientações'));
+    });
+  });
+}
+```
+
+Rodar `flutter test test/unit/whatsapp_report_test.dart` dentro de `mobile/`.
+
+Commit: `test: testes unitários para geração de texto do relatório WhatsApp`
+
+---
+
+_Última atualização pelo planejador: iteração 9 — 2026-08-11_

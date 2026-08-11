@@ -2166,4 +2166,183 @@ Commit: `test: testes unitários para geração de texto do relatório WhatsApp`
 
 ---
 
-_Última atualização pelo planejador: iteração 9 — 2026-08-11_
+---
+
+## TASK-045 · 🟡 Média · LeituraDetalheScreen — zoom de imagem no tap
+
+**Status:** `done`  
+**Arquivo:** `mobile/lib/features/diagnostico/presentation/pages/leitura_detalhe_screen.dart`
+
+**Contexto:**  
+A imagem da leitura é exibida como quadrado fixo 1:1. Não há como ampliá-la para ver detalhes da folha/doença. Tap para abrir em tela cheia com zoom é UX padrão em apps de diagnóstico.
+
+**O que fazer:**
+
+1. Envolver a imagem em `GestureDetector(onTap: _verImagemCompleta, child: ClipRRect(...))`.
+
+2. Implementar `_verImagemCompleta()` no state:
+```dart
+void _verImagemCompleta() {
+  showDialog(
+    context: context,
+    barrierColor: Colors.black87,
+    builder: (ctx) => Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: EdgeInsets.zero,
+      child: Stack(
+        alignment: Alignment.topRight,
+        children: [
+          InteractiveViewer(
+            minScale: 0.5,
+            maxScale: 4.0,
+            child: Image.file(
+              File(widget.leitura.caminhoImagem),
+              fit: BoxFit.contain,
+              errorBuilder: (_, __, ___) => const Center(
+                child: Icon(Icons.broken_image, color: Colors.white, size: 64),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(8),
+            child: IconButton(
+              icon: const Icon(Icons.close, color: Colors.white, size: 28),
+              onPressed: () => Navigator.pop(ctx),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+```
+
+`dart analyze mobile` → sem erros.  
+Commit: `feat: tap na imagem abre zoom fullscreen no LeituraDetalheScreen`
+
+**Critérios de aceitação:**
+- Tap na imagem abre dialog fullscreen com fundo escuro
+- `InteractiveViewer` permite pinch-to-zoom e pan
+- Botão X fecha o dialog
+- `dart analyze` limpo
+
+---
+
+## TASK-046 · 🟡 Média · Keyboard dismissal em telas de formulário
+
+**Status:** `done`  
+**Arquivos:**
+- `mobile/lib/features/auth/presentation/pages/login_page.dart`
+- `mobile/lib/features/auth/presentation/pages/forgot_password_page.dart`
+- `mobile/lib/features/auth/presentation/pages/add_user_page.dart`
+
+**Contexto:**  
+Nas telas de formulário, tocar fora de um campo de texto não fecha o teclado. É um padrão UX importante — especialmente em Android.
+
+**O que fazer:**
+
+Para cada arquivo, ler o `build()` e envolver o `body` do Scaffold com `GestureDetector`:
+
+```dart
+body: GestureDetector(
+  onTap: () => FocusScope.of(context).unfocus(),
+  behavior: HitTestBehavior.translucent,
+  child: SafeArea( // ou SingleChildScrollView, dependendo do arquivo
+    child: // conteúdo existente
+  ),
+),
+```
+
+**Importante:** `HitTestBehavior.translucent` é essencial — sem ele, o `GestureDetector` intercepta taps em botões e campos também.
+
+`dart analyze mobile` → sem erros.  
+Commit: `feat: dismissal de teclado ao tocar fora dos campos em formulários de auth`
+
+---
+
+## TASK-047 · 🟢 Baixa · Sentry em AdminPage._fetchCompanyName e catch blocks silenciosos restantes
+
+**Status:** `done`  
+**Arquivo:** `mobile/lib/features/auth/presentation/pages/admin_page.dart`
+
+**Contexto:**  
+`AdminPage._fetchCompanyName()` tem `catch (_) {}` silencioso — erro de Firestore passa sem registro no Sentry.
+
+**O que fazer:**
+
+1. Em `_fetchCompanyName()`, substituir `catch (_) {}` por:
+```dart
+} catch (e, st) {
+  unawaited(Sentry.captureException(e, stackTrace: st));
+}
+```
+
+2. Verificar que `dart:async` e `sentry_flutter` já estão importados (pela TASK-039, sim). Se não, adicionar.
+
+3. Fazer grep por `catch (_)` em `mobile/lib/` para encontrar outros catch blocks completamente silenciosos:
+   - Adicionar Sentry apenas onde a exceção indica erro real (Firestore, Isar, HTTP, permissões)
+   - Ignorar catch em código de cleanup (`dispose`, `cancel`) onde o erro não importa
+
+`dart analyze mobile` → sem erros.  
+Commit: `feat: Sentry em _fetchCompanyName e catch silenciosos restantes`
+
+---
+
+## TASK-048 · 🟢 Baixa · Unit tests para regex de email e validators de senha
+
+**Status:** `done`  
+**Arquivo novo:** `mobile/test/unit/validators_test.dart`
+
+**Contexto:**  
+A regex de email atualizada na TASK-003 e o validator de senha mínimo 8 chars não têm cobertura de teste.
+
+**O que fazer:**
+
+Criar `mobile/test/unit/validators_test.dart`:
+
+```dart
+import 'package:flutter_test/flutter_test.dart';
+
+final _emailRegex = RegExp(r'^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$');
+
+String? validarEmail(String? v) {
+  if (v == null || v.isEmpty) return 'E-mail obrigatório';
+  if (!_emailRegex.hasMatch(v.trim())) return 'E-mail inválido';
+  return null;
+}
+
+String? validarSenha(String? v, {int minChars = 8}) {
+  if (v == null || v.isEmpty) return 'Senha obrigatória';
+  if (v.trim().length < minChars) return 'Mínimo $minChars caracteres';
+  return null;
+}
+
+void main() {
+  group('validarEmail', () {
+    test('formato padrão é válido', () => expect(validarEmail('usuario@empresa.com'), isNull));
+    test('subdomínio é válido', () => expect(validarEmail('user@mail.empresa.com.br'), isNull));
+    test('TLD de 1 char é inválido', () => expect(validarEmail('a@b.c'), isNotNull));
+    test('sem @ é inválido', () => expect(validarEmail('usuarioempresa.com'), isNotNull));
+    test('sem domínio é inválido', () => expect(validarEmail('usuario@'), isNotNull));
+    test('vazio retorna erro obrigatório', () => expect(validarEmail(''), 'E-mail obrigatório'));
+    test('null retorna erro obrigatório', () => expect(validarEmail(null), 'E-mail obrigatório'));
+    test('com ponto no local-part é válido', () => expect(validarEmail('nome.sobrenome@empresa.com'), isNull));
+  });
+
+  group('validarSenha', () {
+    test('null retorna erro', () => expect(validarSenha(null), isNotNull));
+    test('vazia retorna erro', () => expect(validarSenha(''), isNotNull));
+    test('menos de 8 chars retorna erro', () => expect(validarSenha('1234567'), isNotNull));
+    test('exatamente 8 chars é válido', () => expect(validarSenha('12345678'), isNull));
+    test('mais de 8 chars é válido', () => expect(validarSenha('senha_longa_123'), isNull));
+    test('limite customizável', () => expect(validarSenha('123456', minChars: 6), isNull));
+  });
+}
+```
+
+Rodar `flutter test test/unit/validators_test.dart` dentro de `mobile/`.  
+Commit: `test: testes para regex de email e validators de senha`
+
+---
+
+_Última atualização pelo planejador: iteração 10 — 2026-08-11_

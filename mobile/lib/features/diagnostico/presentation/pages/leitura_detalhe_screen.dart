@@ -109,6 +109,40 @@ class _LeituraDetalheScreenState extends State<LeituraDetalheScreen> {
     if (mounted) Navigator.pop(context);
   }
 
+  void _verImagemCompleta() {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black87,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: EdgeInsets.zero,
+        child: Stack(
+          alignment: Alignment.topRight,
+          children: [
+            InteractiveViewer(
+              minScale: 0.5,
+              maxScale: 4.0,
+              child: Image.file(
+                File(widget.leitura.caminhoImagem),
+                fit: BoxFit.contain,
+                errorBuilder: (_, __, ___) => const Center(
+                  child: Icon(Icons.broken_image, color: Colors.white, size: 64),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(8),
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white, size: 28),
+                onPressed: () => Navigator.pop(ctx),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l = widget.leitura;
@@ -143,17 +177,20 @@ class _LeituraDetalheScreenState extends State<LeituraDetalheScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(AppRadius.lg),
-                child: AspectRatio(
-                  aspectRatio: 1,
-                  child: Image.file(
-                    File(l.caminhoImagem),
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Container(
-                      color: AppColors.surfaceVariant,
-                      child: const Icon(Icons.broken_image,
-                          color: AppColors.textTertiary, size: 48),
+              GestureDetector(
+                onTap: _verImagemCompleta,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
+                  child: AspectRatio(
+                    aspectRatio: 1,
+                    child: Image.file(
+                      File(l.caminhoImagem),
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        color: AppColors.surfaceVariant,
+                        child: const Icon(Icons.broken_image,
+                            color: AppColors.textTertiary, size: 48),
+                      ),
                     ),
                   ),
                 ),

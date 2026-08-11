@@ -1184,7 +1184,7 @@ void main() {
 
 ## TASK-032 · 🟡 Média · Unit tests para DiagnosticoStatus e etapaProgresso
 
-**Status:** `pending`  
+**Status:** `done`  
 **Arquivo:** `mobile/test/unit/home_controller_logic_test.dart` (NOVO)
 
 **Contexto:**  

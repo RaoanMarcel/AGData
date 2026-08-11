@@ -30,6 +30,8 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
 
   final List<int> _selecionados = [];
   bool _loading = true;
+  bool _temMais = true;
+  bool _carregandoMais = false;
 
   final ScrollController _scrollController = ScrollController();
   double _scrollOffset = 0;
@@ -51,27 +53,56 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
   void initState() {
     super.initState();
     _carregarDados();
+    _scrollController.addListener(_onScroll);
   }
 
   @override
   void dispose() {
+    _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     super.dispose();
   }
 
+  void _onScroll() {
+    final pos = _scrollController.position;
+    if (pos.pixels >= pos.maxScrollExtent - 200 &&
+        !_carregandoMais &&
+        _temMais) {
+      _carregarMais();
+    }
+  }
+
   Future<void> _carregarDados() async {
-    var dados = await _databaseService.buscarTodasLeituras();
+    var dados = await _databaseService.buscarLeiturasPaginadas(
+        limite: 50, offset: 0);
     // Restringe ao talhão de origem, quando aberto a partir da câmera.
     if (widget.talhaoInicial != null) {
       dados = dados.where((l) => l.talhao == widget.talhaoInicial).toList();
     }
     if (mounted) {
       setState(() {
-        _todasLeituras = dados.reversed.toList();
+        _todasLeituras = dados;
         _leiturasFiltradas = List.from(_todasLeituras);
+        _temMais = dados.length == 50;
         _loading = false;
       });
     }
+  }
+
+  Future<void> _carregarMais() async {
+    setState(() => _carregandoMais = true);
+    var novas = await _databaseService.buscarLeiturasPaginadas(
+        limite: 50, offset: _todasLeituras.length);
+    if (widget.talhaoInicial != null) {
+      novas = novas.where((l) => l.talhao == widget.talhaoInicial).toList();
+    }
+    if (!mounted) return;
+    setState(() {
+      _todasLeituras.addAll(novas);
+      _temMais = novas.length == 50;
+      _carregandoMais = false;
+    });
+    _aplicarFiltros();
   }
 
   // --- LÓGICA DE FILTRAGEM ---
@@ -228,6 +259,10 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
       MaterialPageRoute(
           builder: (_) => LeituraDetalheScreen(leitura: leitura)),
     );
+    setState(() {
+      _todasLeituras = [];
+      _temMais = true;
+    });
     await _carregarDados();
     if (mounted) {
       _aplicarFiltros();
@@ -349,8 +384,14 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
                     : ListView.builder(
                         controller: _scrollController,
                         padding: const EdgeInsets.all(AppSpacing.lg),
-                        itemCount: talhoes.length,
+                        itemCount: talhoes.length + (_carregandoMais ? 1 : 0),
                         itemBuilder: (context, index) {
+                          if (index == talhoes.length) {
+                            return const Padding(
+                              padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
+                              child: Center(child: CircularProgressIndicator()),
+                            );
+                          }
                           final nome = talhoes[index];
                           final leituras = grupos[nome]!;
                           return _TalhaoGrupo(

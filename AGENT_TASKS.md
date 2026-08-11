@@ -909,7 +909,7 @@ Verificar também `app_button.dart` linha ~53 (spinner em `ElevatedButton` → `
 
 ## TASK-027 · 🟡 Média · HistoricoScreen — paginação para listas longas
 
-**Status:** `pending`  
+**Status:** `done`  
 **Arquivos:** `mobile/lib/features/diagnostico/presentation/pages/historico_screen.dart`, `mobile/lib/features/diagnostico/data/datasources/database_service.dart`
 
 **Contexto:**  

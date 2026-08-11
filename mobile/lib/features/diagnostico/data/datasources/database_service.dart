@@ -29,6 +29,18 @@ class DatabaseService {
     return await isar.leituraModels.where().sortByDataHoraDesc().findAll();
   }
 
+  Future<List<LeituraModel>> buscarLeiturasPaginadas({
+    int limite = 50,
+    int offset = 0,
+  }) async {
+    return await isar.leituraModels
+        .where()
+        .sortByDataHoraDesc()
+        .offset(offset)
+        .limit(limite)
+        .findAll();
+  }
+
   Future<void> deletarLeitura(int id) async {
     await isar.writeTxn(() async {
       await isar.leituraModels.delete(id);

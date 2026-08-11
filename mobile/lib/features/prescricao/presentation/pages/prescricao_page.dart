@@ -7,6 +7,7 @@ import '../../../../core/services/download_service.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_dimens.dart';
+import '../../../../core/widgets/empty_state.dart';
 import '../../../auth/data/models/auth_model.dart';
 import '../../../auth/presentation/controller/session_controller.dart';
 import '../../../diagnostico/data/datasources/database_service.dart';
@@ -330,18 +331,10 @@ class _PrescricaoPageState extends State<PrescricaoPage> {
                       // ── Preview mapa ─────────────────────────────────────
                       _labelSecao('Prévia da Grade de Prescrição'),
                       if (_grade == null)
-                        Card(
-                          child: Padding(
-                            padding: const EdgeInsets.all(24),
-                            child: Center(
-                              child: Text(
-                                'Sem leituras com GPS no período selecionado.',
-                                style: TextStyle(
-                                    color: AppColors.textTertiary),
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
-                          ),
+                        const EmptyState(
+                          icon: Icons.gps_off_outlined,
+                          title: 'Sem leituras com GPS',
+                          message: 'Nenhuma leitura com localização GPS no período selecionado.',
                         )
                       else ...[
                         PrescricaoMapWidget(grade: _grade!),

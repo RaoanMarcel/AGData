@@ -7,6 +7,7 @@ import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/download_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_dimens.dart';
+import '../../../../core/widgets/empty_state.dart';
 import '../../../auth/presentation/controller/session_controller.dart';
 import '../../../diagnostico/data/datasources/database_service.dart';
 import '../../../diagnostico/data/models/leitura_model.dart';
@@ -280,9 +281,10 @@ class _RelatorioPageState extends State<RelatorioPage> {
                           titulo:
                               'Talhões (${_talhoesSelected.isEmpty ? 'todos' : _talhoesSelected.length} selecionado(s))',
                           child: _talhoes.isEmpty
-                              ? const Padding(
-                                  padding: EdgeInsets.all(8),
-                                  child: Text('Nenhum talhão cadastrado.'),
+                              ? const EmptyState(
+                                  icon: Icons.agriculture_outlined,
+                                  title: 'Nenhum talhão cadastrado',
+                                  message: 'Cadastre talhões para gerar relatórios.',
                                 )
                               : Column(
                                   crossAxisAlignment:
@@ -333,15 +335,10 @@ class _RelatorioPageState extends State<RelatorioPage> {
                       _SecaoCard(
                         titulo: 'Prévia do Mapa',
                         child: _leiturasFiltered.isEmpty
-                            ? const Padding(
-                                padding: EdgeInsets.all(16),
-                                child: Center(
-                                  child: Text(
-                                    'Sem leituras no período.',
-                                    style:
-                                        TextStyle(color: AppColors.textTertiary),
-                                  ),
-                                ),
+                            ? const EmptyState(
+                                icon: Icons.analytics_outlined,
+                                title: 'Sem leituras no período',
+                                message: 'Ajuste os filtros ou registre novas análises no campo.',
                               )
                             : MapaMiniWidget(
                                 leituras: _leiturasFiltered,

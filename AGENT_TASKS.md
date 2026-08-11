@@ -415,7 +415,7 @@ if (pendentes > 0)
 
 ## TASK-013 · 🟢 Baixa · Migrar mensagens de "vazio" para o widget EmptyState
 
-**Status:** `pending`  
+**Status:** `done`  
 **Arquivos:** verificar `prescricao_page.dart`, `relatorio_page.dart`, `admin_page.dart`, `super_admin_page.dart`
 
 **Contexto:**  

@@ -57,7 +57,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                 Text("Senha definida com sucesso!"),
               ],
             ),
-            backgroundColor: Colors.green,
+            backgroundColor: AppColors.syncSuccess,
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -70,7 +70,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text("Erro ao atualizar: ${e.toString()}"),
-            backgroundColor: Colors.redAccent,
+            backgroundColor: AppColors.danger,
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -176,7 +176,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                       child: ElevatedButton(
                         onPressed: _carregando ? null : _atualizarSenha,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF2E7D32),
+                          backgroundColor: AppColors.primary,
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           elevation: 3,
@@ -215,7 +215,7 @@ class _ForcaSenhaBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final forca = _calcularForca();
-    final cores = [Colors.red, Colors.orange, Colors.green];
+    final cores = [AppColors.danger, AppColors.syncPending, AppColors.syncSuccess];
     final labels = ['Fraca', 'Média', 'Forte'];
     final cor = cores[forca - 1];
     final label = labels[forca - 1];

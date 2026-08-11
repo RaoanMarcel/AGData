@@ -2,6 +2,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../../core/di/injection_container.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../controller/session_controller.dart';
 import '../pages/forgot_password_page.dart';
@@ -63,7 +64,7 @@ class _LoginPageState extends State<LoginPage> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(mensagemErro), backgroundColor: Colors.redAccent),
+          SnackBar(content: Text(mensagemErro), backgroundColor: AppColors.danger),
         );
       }
     } catch (e) {
@@ -94,7 +95,7 @@ class _LoginPageState extends State<LoginPage> {
               if (!isOffline) return const SizedBox.shrink();
               return Container(
                 width: double.infinity,
-                color: Colors.red.shade700,
+                color: AppColors.danger,
                 padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
                 child: const Row(
                   children: [
@@ -119,21 +120,21 @@ class _LoginPageState extends State<LoginPage> {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Icon(Icons.eco, size: 80, color: Color(0xFF2E7D32)),
+                const Icon(Icons.eco, size: 80, color: AppColors.primary),
                 const SizedBox(height: 16),
                 const Text(
                   "HectarIA",
                   style: TextStyle(
-                    fontSize: 36, 
-                    fontWeight: FontWeight.bold, 
-                    color: Color(0xFF2E7D32),
+                    fontSize: 36,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primary,
                     letterSpacing: 1.5,
                   ),
                   textAlign: TextAlign.center,
                 ),
                 const Text(
                   "Monitoramento Inteligente",
-                  style: TextStyle(color: Colors.grey, fontSize: 16),
+                  style: TextStyle(color: AppColors.textTertiary, fontSize: 16),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 48),
@@ -173,7 +174,7 @@ class _LoginPageState extends State<LoginPage> {
                   child: ElevatedButton(
                     onPressed: _carregando ? null : _fazerLogin,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF2E7D32),
+                      backgroundColor: AppColors.primary,
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
@@ -194,7 +195,7 @@ class _LoginPageState extends State<LoginPage> {
                   },
                   child: const Text(
                     "Esqueceu sua senha?",
-                    style: TextStyle(color: Color(0xFF2E7D32), fontWeight: FontWeight.w600),
+                    style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600),
                   ),
                 ),
               ],

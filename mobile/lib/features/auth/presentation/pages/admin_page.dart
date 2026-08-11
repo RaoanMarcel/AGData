@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 // Imports baseados na sua estrutura de pastas
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/empty_state.dart';
 import '../../data/models/auth_model.dart';
 import '../controller/session_controller.dart';
 import 'add_user_page.dart';
@@ -180,70 +181,76 @@ class _AdminPageState extends State<AdminPage> {
                       }).toList();
 
                 if (allDocs.isEmpty) {
-                  return const Center(child: Text("Nenhum operador cadastrado."));
+                  return const EmptyState(
+                    icon: Icons.people_outline,
+                    title: 'Nenhum usuário cadastrado',
+                    message: 'Adicione operadores ou administradores usando o botão abaixo.',
+                  );
                 }
 
                 if (docs.isEmpty) {
-                  return const Center(
-                      child: Text("Nenhum resultado para a busca."));
+                  return const EmptyState(
+                    icon: Icons.search_off,
+                    title: 'Sem resultados',
+                    message: 'Nenhum usuário encontrado para a busca.',
+                  );
                 }
 
-                return ListView.separated(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: docs.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 8),
-                  itemBuilder: (context, index) {
-                    final user = UserModel.fromMap(docs[index].data() as Map<String, dynamic>);
-                    final isMe = user.uid == _session.usuario?.uid;
+                final usuarios = docs
+                    .map((d) => UserModel.fromMap(d.data() as Map<String, dynamic>))
+                    .toList();
+                final admins = usuarios.where((u) => u.role == UserRole.admin).toList();
+                final operadores = usuarios.where((u) => u.role == UserRole.operador).toList();
 
-                    return Card(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      child: ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: user.role == UserRole.admin ? Colors.orange.shade100 : AppColors.primaryContainer,
-                          child: Icon(
-                            user.role == UserRole.admin ? Icons.admin_panel_settings : Icons.person,
-                            color: user.role == UserRole.admin ? Colors.orange : AppColors.primary,
-                          ),
-                        ),
-                        title: Row(
-                          children: [
-                            Flexible(child: Text(user.name, style: const TextStyle(fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis)),
-                            if (isMe) ...[
-                              const SizedBox(width: 6),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: AppColors.primaryContainer,
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: AppColors.primaryLight),
-                                ),
-                                child: const Text('Você', style: TextStyle(fontSize: 11, color: AppColors.primaryDark, fontWeight: FontWeight.w600)),
-                              ),
-                            ],
-                          ],
-                        ),
-                        subtitle: Text(user.email),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (!isMe)
-                              IconButton(
-                                icon: const FaIcon(FontAwesomeIcons.whatsapp, color: AppColors.primary, size: 20),
-                                onPressed: () => _enviarAcessoWhatsApp(user),
-                                tooltip: "Enviar Acesso",
-                              ),
-                            if (!isMe)
-                              IconButton(
-                                icon: const Icon(Icons.delete_outline, color: AppColors.danger, size: 22),
-                                onPressed: () => _confirmarExclusao(user),
-                                tooltip: "Excluir",
-                              ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
+                final items = <Widget>[];
+
+                // Seção Administradores
+                items.add(_ListaHeader(
+                  titulo: 'Administradores',
+                  count: admins.length,
+                ));
+                if (admins.isEmpty) {
+                  items.add(const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Text('Nenhum', style: TextStyle(color: AppColors.textTertiary)),
+                  ));
+                } else {
+                  for (final user in admins) {
+                    items.add(_UserCard(
+                      user: user,
+                      isMe: user.uid == _session.usuario?.uid,
+                      onWhatsApp: () => _enviarAcessoWhatsApp(user),
+                      onExcluir: () => _confirmarExclusao(user),
+                    ));
+                  }
+                }
+
+                items.add(const SizedBox(height: 8));
+
+                // Seção Operadores
+                items.add(_ListaHeader(
+                  titulo: 'Operadores',
+                  count: operadores.length,
+                ));
+                if (operadores.isEmpty) {
+                  items.add(const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Text('Nenhum', style: TextStyle(color: AppColors.textTertiary)),
+                  ));
+                } else {
+                  for (final user in operadores) {
+                    items.add(_UserCard(
+                      user: user,
+                      isMe: user.uid == _session.usuario?.uid,
+                      onWhatsApp: () => _enviarAcessoWhatsApp(user),
+                      onExcluir: () => _confirmarExclusao(user),
+                    ));
+                  }
+                }
+
+                return ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                  children: items,
                 );
               },
             ),
@@ -257,6 +264,114 @@ class _AdminPageState extends State<AdminPage> {
         ),
         label: const Text("NOVO OPERADOR", style: TextStyle(fontWeight: FontWeight.bold)),
         icon: const Icon(Icons.person_add),
+      ),
+    );
+  }
+}
+
+// ── Widgets privados ──────────────────────────────────────────────────────────
+
+class _ListaHeader extends StatelessWidget {
+  final String titulo;
+  final int count;
+  const _ListaHeader({required this.titulo, required this.count});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 12, 4, 4),
+      child: Row(
+        children: [
+          Text(
+            '$titulo ($count)',
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w700,
+                ),
+          ),
+          const SizedBox(width: 8),
+          const Expanded(child: Divider()),
+        ],
+      ),
+    );
+  }
+}
+
+class _UserCard extends StatelessWidget {
+  final UserModel user;
+  final bool isMe;
+  final VoidCallback onWhatsApp;
+  final VoidCallback onExcluir;
+
+  const _UserCard({
+    required this.user,
+    required this.isMe,
+    required this.onWhatsApp,
+    required this.onExcluir,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isAdmin = user.role == UserRole.admin;
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: isAdmin ? Colors.orange.shade100 : AppColors.primaryContainer,
+          child: Icon(
+            isAdmin ? Icons.admin_panel_settings : Icons.person,
+            color: isAdmin ? Colors.orange : AppColors.primary,
+          ),
+        ),
+        title: Row(
+          children: [
+            Flexible(
+              child: Text(
+                user.name,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            if (isMe) ...[
+              const SizedBox(width: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryContainer,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppColors.primaryLight),
+                ),
+                child: const Text(
+                  'Você',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: AppColors.primaryDark,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+        subtitle: Text(user.email),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (!isMe)
+              IconButton(
+                icon: const FaIcon(FontAwesomeIcons.whatsapp, color: AppColors.primary, size: 20),
+                onPressed: onWhatsApp,
+                tooltip: "Enviar Acesso",
+              ),
+            if (!isMe)
+              IconButton(
+                icon: const Icon(Icons.delete_outline, color: AppColors.danger, size: 22),
+                onPressed: onExcluir,
+                tooltip: "Excluir",
+              ),
+          ],
+        ),
       ),
     );
   }

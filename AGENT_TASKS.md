@@ -338,7 +338,7 @@ A auditoria encontrou `const Color(0xFF2E7D32)` hardcoded na linha ~114 do botã
 
 ## TASK-011 · 🟡 Média · AdminPage — dividir lista de usuários em seções por role
 
-**Status:** `pending`  
+**Status:** `done`  
 **Arquivo:** `mobile/lib/features/auth/presentation/pages/admin_page.dart`
 
 **Contexto:**  

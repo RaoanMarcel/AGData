@@ -18,6 +18,12 @@
 Thumbs.db
 .env
 
+# --- CLAUDE CODE ---
+.claude/
+*.claude/
+.claude.json
+CLAUDE.md
+
 # --- MODELOS DE IA ---
 *.keras
 *.h5

@@ -990,4 +990,277 @@ A `ValueKey(_controller.status)` garante que o switcher detecta a mudança de es
 
 ---
 
-_Última atualização pelo planejador: iteração 5 — 2026-08-11_
+---
+
+## TASK-029 · 🔴 Alta · Pull-to-refresh no HistoricoScreen
+
+**Status:** `done`  
+**Arquivo:** `mobile/lib/features/diagnostico/presentation/pages/historico_screen.dart`
+
+**Contexto:**  
+O `HistoricoScreen` tem um `ListView.builder` paginado mas não permite ao usuário forçar recarregamento dos dados. Pull-to-refresh é um padrão UX universal em apps mobile — ausência dele é perceptível.
+
+**O que fazer:**
+
+1. Localizar o `ListView.builder` principal (que lista `_leiturasFiltradas`).
+2. Envolver com `RefreshIndicator`:
+```dart
+RefreshIndicator(
+  onRefresh: _recarregar,
+  child: ListView.builder(
+    controller: _scrollController,
+    // ... resto idêntico
+  ),
+)
+```
+3. Implementar `_recarregar()`:
+```dart
+Future<void> _recarregar() async {
+  setState(() {
+    _leituras = []; // ou _todasLeituras
+    _temMais = true;
+    _carregandoMais = false;
+  });
+  await _carregarDados();
+}
+```
+   **Atenção:** Verificar os nomes exatos das variáveis usadas no arquivo (`_leituras`, `_todasLeituras`, etc.) e usar os corretos.
+
+4. A lista filtrada (`_leiturasFiltradas`) deve ser recalculada após o reload — verificar se `_carregarDados()` já chama `_aplicarFiltros()` ou equivalente; se não, chamar explicitamente.
+
+5. `dart analyze mobile` deve passar.  
+6. Commit: `feat: pull-to-refresh no HistoricoScreen`
+
+**Critérios de aceitação:**
+- Puxar a lista para baixo dispara indicador de loading e recarrega desde a primeira página
+- Filtros ativos são mantidos após o refresh
+- Sem crash se o usuário soltar durante o carregamento
+
+---
+
+## TASK-030 · 🔴 Alta · Pull-to-refresh no HomeDashboard
+
+**Status:** `pending`  
+**Arquivo:** `mobile/lib/features/diagnostico/presentation/pages/home_dashboard_screen.dart`
+
+**Contexto:**  
+`HomeDashboardScreen` é atualmente um `StatelessWidget`. Para suportar pull-to-refresh que force recarregamento do `ClimaCard` (dados climáticos) e do `_PendentesBanner` (contador de pendentes), precisamos de uma key mutável que force o rebuild desses widgets.
+
+**O que fazer:**
+
+1. Converter `HomeDashboardScreen` de `StatelessWidget` para `StatefulWidget`.
+
+2. Adicionar campo de estado: `int _refreshKey = 0;`
+
+3. Implementar `_recarregar()`:
+```dart
+Future<void> _recarregar() async {
+  setState(() => _refreshKey++);
+  // Pequena pausa para garantir que o indicador seja visível
+  await Future.delayed(const Duration(milliseconds: 500));
+}
+```
+
+4. Envolver o `SingleChildScrollView` com `RefreshIndicator`:
+```dart
+RefreshIndicator(
+  onRefresh: _recarregar,
+  child: SingleChildScrollView(
+    physics: const AlwaysScrollableScrollPhysics(), // necessário para pull-to-refresh funcionar mesmo com pouco conteúdo
+    padding: ...,
+    child: Column(...),
+  ),
+)
+```
+
+5. Passar `key: ValueKey('clima_$_refreshKey')` para `ClimaCard` e `key: ValueKey('pendentes_$_refreshKey')` para `_PendentesBanner` — isso força o Flutter a destruir e recriar os widgets, disparando seus respectivos `initState()` e recarregando os dados.
+
+6. `dart analyze mobile` deve passar.  
+7. Commit: `feat: pull-to-refresh no HomeDashboard forçando reload de ClimaCard e PendentesBanner`
+
+**Critérios de aceitação:**
+- Pull-to-refresh visível e funcional no HomeDashboard
+- ClimaCard recarrega dados climáticos do servidor após o pull
+- _PendentesBanner recarrega contador de pendentes após o pull
+- `physics: AlwaysScrollableScrollPhysics()` garante que o gesto funcione mesmo quando o conteúdo não preenche a tela
+
+---
+
+## TASK-031 · 🟡 Média · Unit tests para lógica pura: iniciais do avatar e paginação
+
+**Status:** `pending`  
+**Arquivos:** 
+- `mobile/test/unit/avatar_iniciais_test.dart` (NOVO)
+- `mobile/test/unit/paginacao_logic_test.dart` (NOVO)
+
+**Contexto:**  
+Os testes existentes seguem o padrão de testar funções puras sem dependências de UI ou Isar. A função de iniciais do avatar em `SettingsPage` e a lógica de paginação (`_temMais = novas.length == 50`) são candidatas ideais.
+
+**O que fazer:**
+
+**Arquivo 1:** `mobile/test/unit/avatar_iniciais_test.dart`
+
+Extrair a lógica de iniciais como função pura (sem copiar o widget):
+```dart
+import 'package:flutter_test/flutter_test.dart';
+
+/// Função pura espelho da lógica do _Avatar widget
+String computarIniciais(String nome) {
+  final partes = nome.trim().split(' ').where((p) => p.isNotEmpty).toList();
+  if (partes.isEmpty) return '?';
+  if (partes.length == 1) return partes[0][0].toUpperCase();
+  return '${partes[0][0]}${partes.last[0]}'.toUpperCase();
+}
+
+void main() {
+  group('computarIniciais', () {
+    test('nome completo retorna primeira e última inicial', () {
+      expect(computarIniciais('João Silva'), 'JS');
+    });
+    test('nome único retorna primeira letra maiúscula', () {
+      expect(computarIniciais('Maria'), 'M');
+    });
+    test('string vazia retorna ?', () {
+      expect(computarIniciais(''), '?');
+    });
+    test('apenas espaços retorna ?', () {
+      expect(computarIniciais('   '), '?');
+    });
+    test('três partes usa primeira e última', () {
+      expect(computarIniciais('Ana Paula Souza'), 'AS');
+    });
+    test('nome minúsculo é convertido para maiúsculo', () {
+      expect(computarIniciais('carlos'), 'C');
+    });
+    test('espaços extras entre palavras são ignorados', () {
+      expect(computarIniciais('  João   Silva  '), 'JS');
+    });
+  });
+}
+```
+
+**Arquivo 2:** `mobile/test/unit/paginacao_logic_test.dart`
+
+Testar a lógica de decisão `_temMais`:
+```dart
+import 'package:flutter_test/flutter_test.dart';
+
+/// Espelho da lógica de paginação do HistoricoScreen
+bool calcularTemMais(int registrosRetornados, {int limite = 50}) {
+  return registrosRetornados == limite;
+}
+
+void main() {
+  group('calcularTemMais', () {
+    test('retorna true quando recebe página cheia (50 registros)', () {
+      expect(calcularTemMais(50), isTrue);
+    });
+    test('retorna false quando recebe página incompleta (< 50)', () {
+      expect(calcularTemMais(30), isFalse);
+    });
+    test('retorna false quando não há mais registros (0)', () {
+      expect(calcularTemMais(0), isFalse);
+    });
+    test('retorna false quando recebe 49 registros', () {
+      expect(calcularTemMais(49), isFalse);
+    });
+    test('funciona com limite personalizado', () {
+      expect(calcularTemMais(20, limite: 20), isTrue);
+      expect(calcularTemMais(19, limite: 20), isFalse);
+    });
+  });
+}
+```
+
+**Rodar testes:** `flutter test test/unit/avatar_iniciais_test.dart test/unit/paginacao_logic_test.dart` (dentro de `mobile/`)
+
+8. Commit: `test: testes unitários para iniciais do avatar e lógica de paginação`
+
+**Critérios de aceitação:**
+- Todos os testes passam sem erro
+- Nenhum import de Flutter UI necessário nos arquivos de teste unitário (apenas `flutter_test`)
+
+---
+
+## TASK-032 · 🟡 Média · Unit tests para DiagnosticoStatus e etapaProgresso
+
+**Status:** `pending`  
+**Arquivo:** `mobile/test/unit/home_controller_logic_test.dart` (NOVO)
+
+**Contexto:**  
+O `HomeController` tem lógica de estado complexa (`DiagnosticoStatus`, `etapaProgresso`, `descartar()`). Testar o controller diretamente exigiria mockar Classifier, Location, etc. — complexo. Mas a lógica de transição de estados pode ser testada como funções puras.
+
+**O que fazer:**
+
+Criar `mobile/test/unit/home_controller_logic_test.dart` testando a **lógica de decisão** do controller sem instanciar o `HomeController`:
+
+```dart
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mobile/features/diagnostico/presentation/controllers/home_controller.dart';
+
+/// Funções puras que espelham decisões do HomeController
+bool deveHabilitarSalvar(DiagnosticoStatus status, bool salvando) {
+  return status == DiagnosticoStatus.revisao && !salvando;
+}
+
+bool deveExibirBotoesCaptura(DiagnosticoStatus status) {
+  return status == DiagnosticoStatus.inicial || status == DiagnosticoStatus.erro;
+}
+
+void main() {
+  group('DiagnosticoStatus enum', () {
+    test('todos os valores estão presentes', () {
+      expect(DiagnosticoStatus.values.length, 4);
+      expect(DiagnosticoStatus.values, contains(DiagnosticoStatus.inicial));
+      expect(DiagnosticoStatus.values, contains(DiagnosticoStatus.processando));
+      expect(DiagnosticoStatus.values, contains(DiagnosticoStatus.revisao));
+      expect(DiagnosticoStatus.values, contains(DiagnosticoStatus.erro));
+    });
+  });
+
+  group('deveHabilitarSalvar', () {
+    test('habilitado apenas em revisão sem salvamento em curso', () {
+      expect(deveHabilitarSalvar(DiagnosticoStatus.revisao, false), isTrue);
+    });
+    test('desabilitado durante salvamento', () {
+      expect(deveHabilitarSalvar(DiagnosticoStatus.revisao, true), isFalse);
+    });
+    test('desabilitado em estado inicial', () {
+      expect(deveHabilitarSalvar(DiagnosticoStatus.inicial, false), isFalse);
+    });
+    test('desabilitado em processamento', () {
+      expect(deveHabilitarSalvar(DiagnosticoStatus.processando, false), isFalse);
+    });
+    test('desabilitado em erro', () {
+      expect(deveHabilitarSalvar(DiagnosticoStatus.erro, false), isFalse);
+    });
+  });
+
+  group('deveExibirBotoesCaptura', () {
+    test('exibe botões no estado inicial', () {
+      expect(deveExibirBotoesCaptura(DiagnosticoStatus.inicial), isTrue);
+    });
+    test('exibe botões no estado de erro (retry)', () {
+      expect(deveExibirBotoesCaptura(DiagnosticoStatus.erro), isTrue);
+    });
+    test('oculta botões durante processamento', () {
+      expect(deveExibirBotoesCaptura(DiagnosticoStatus.processando), isFalse);
+    });
+    test('oculta botões em revisão', () {
+      expect(deveExibirBotoesCaptura(DiagnosticoStatus.revisao), isFalse);
+    });
+  });
+}
+```
+
+**Rodar:** `flutter test test/unit/home_controller_logic_test.dart` (dentro de `mobile/`)
+
+Commit: `test: testes de lógica de estados do DiagnosticoStatus`
+
+**Critérios de aceitação:**
+- Todos os testes passam
+- Import apenas de `flutter_test` e do enum `DiagnosticoStatus` (sem instanciar HomeController)
+
+---
+
+_Última atualização pelo planejador: iteração 6 — 2026-08-11_

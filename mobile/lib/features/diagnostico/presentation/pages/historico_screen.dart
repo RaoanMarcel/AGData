@@ -72,6 +72,16 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
     }
   }
 
+  Future<void> _recarregar() async {
+    setState(() {
+      _todasLeituras = [];
+      _leiturasFiltradas = [];
+      _temMais = true;
+      _carregandoMais = false;
+    });
+    await _carregarDados();
+  }
+
   Future<void> _carregarDados() async {
     var dados = await _databaseService.buscarLeiturasPaginadas(
         limite: 50, offset: 0);
@@ -381,27 +391,31 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
                         message:
                             'Ajuste os filtros ou realize novas leituras no campo.',
                       )
-                    : ListView.builder(
-                        controller: _scrollController,
-                        padding: const EdgeInsets.all(AppSpacing.lg),
-                        itemCount: talhoes.length + (_carregandoMais ? 1 : 0),
-                        itemBuilder: (context, index) {
-                          if (index == talhoes.length) {
-                            return const Padding(
-                              padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
-                              child: Center(child: CircularProgressIndicator()),
+                    : RefreshIndicator(
+                        onRefresh: _recarregar,
+                        child: ListView.builder(
+                          controller: _scrollController,
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: const EdgeInsets.all(AppSpacing.lg),
+                          itemCount: talhoes.length + (_carregandoMais ? 1 : 0),
+                          itemBuilder: (context, index) {
+                            if (index == talhoes.length) {
+                              return const Padding(
+                                padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
+                                child: Center(child: CircularProgressIndicator()),
+                              );
+                            }
+                            final nome = talhoes[index];
+                            final leituras = grupos[nome]!;
+                            return _TalhaoGrupo(
+                              nome: nome,
+                              leituras: leituras,
+                              selecionados: _selecionados,
+                              onToggle: _alternarSelecao,
+                              onAbrir: _abrirDetalhe,
                             );
-                          }
-                          final nome = talhoes[index];
-                          final leituras = grupos[nome]!;
-                          return _TalhaoGrupo(
-                            nome: nome,
-                            leituras: leituras,
-                            selecionados: _selecionados,
-                            onToggle: _alternarSelecao,
-                            onAbrir: _abrirDetalhe,
-                          );
-                        },
+                          },
+                        ),
                       ),
           ),
         ],

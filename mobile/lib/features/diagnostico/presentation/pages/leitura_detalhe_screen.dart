@@ -1,5 +1,10 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:flutter_map_cache/flutter_map_cache.dart';
+import 'package:dio_cache_interceptor_hive_store/dio_cache_interceptor_hive_store.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:path_provider/path_provider.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_dimens.dart';
 import '../../../../core/theme/diagnostico_visuals.dart';
@@ -165,6 +170,11 @@ class _LeituraDetalheScreenState extends State<LeituraDetalheScreen> {
                           texto: formatarDataHora(l.dataHora)),
                       if (temGps) ...[
                         const SizedBox(height: AppSpacing.md),
+                        _MiniMapa(
+                          latitude: l.latitude,
+                          longitude: l.longitude,
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
                         Align(
                           alignment: Alignment.centerLeft,
                           child: GestureDetector(
@@ -284,6 +294,86 @@ class _MetaLinha extends StatelessWidget {
         Expanded(
             child: Text(texto, style: Theme.of(context).textTheme.bodyMedium)),
       ],
+    );
+  }
+}
+
+/// Mini-mapa não interativo exibindo o ponto GPS da leitura.
+class _MiniMapa extends StatefulWidget {
+  final double latitude;
+  final double longitude;
+  const _MiniMapa({required this.latitude, required this.longitude});
+
+  @override
+  State<_MiniMapa> createState() => _MiniMapaState();
+}
+
+class _MiniMapaState extends State<_MiniMapa> {
+  late Future<String> _cachePath;
+
+  @override
+  void initState() {
+    super.initState();
+    _cachePath = getApplicationDocumentsDirectory().then((d) => d.path);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final centro = LatLng(widget.latitude, widget.longitude);
+
+    return FutureBuilder<String>(
+      future: _cachePath,
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const SizedBox(
+            height: 160,
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          child: SizedBox(
+            height: 160,
+            child: FlutterMap(
+              options: MapOptions(
+                initialCenter: centro,
+                initialZoom: 17,
+                interactionOptions:
+                    const InteractionOptions(flags: InteractiveFlag.none),
+              ),
+              children: [
+                TileLayer(
+                  urlTemplate:
+                      'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  userAgentPackageName: 'com.agdata.app',
+                  maxNativeZoom: 19,
+                  tileProvider: CachedTileProvider(
+                    store: HiveCacheStore(
+                      snapshot.data!,
+                      hiveBoxName: 'agdata_tiles',
+                    ),
+                    maxStale: const Duration(days: 30),
+                  ),
+                ),
+                MarkerLayer(
+                  markers: [
+                    Marker(
+                      point: centro,
+                      width: 32,
+                      height: 32,
+                      child: const Icon(
+                        Icons.location_on,
+                        color: AppColors.danger,
+                        size: 32,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

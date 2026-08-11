@@ -620,7 +620,7 @@ Text(
 
 ## TASK-019 · 🟢 Baixa · LeituraDetalheScreen — mini-mapa embutido no lugar do link GPS
 
-**Status:** `pending`  
+**Status:** `done`  
 **Arquivo:** `mobile/lib/features/diagnostico/presentation/pages/leitura_detalhe_screen.dart`
 
 **Contexto:**  

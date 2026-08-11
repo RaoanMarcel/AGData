@@ -95,7 +95,25 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   _ImagePreview(image: _controller.image),
                   const SizedBox(height: AppSpacing.xl),
-                  ..._buildEstado(_controller.status),
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 400),
+                    transitionBuilder: (child, animation) => FadeTransition(
+                      opacity: animation,
+                      child: SlideTransition(
+                        position: Tween<Offset>(
+                          begin: const Offset(0, 0.05),
+                          end: Offset.zero,
+                        ).animate(animation),
+                        child: child,
+                      ),
+                    ),
+                    child: KeyedSubtree(
+                      key: ValueKey(_controller.status),
+                      child: Column(
+                        children: _buildEstado(_controller.status),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             );

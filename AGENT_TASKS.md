@@ -951,7 +951,7 @@ Future<List<LeituraModel>> buscarLeiturasPaginadas({
 
 ## TASK-028 · 🟢 Baixa · HomeScreen — AnimatedSwitcher na transição processando→resultado
 
-**Status:** `pending`  
+**Status:** `done`  
 **Arquivo:** `mobile/lib/features/diagnostico/presentation/pages/home_screen.dart`
 
 **Contexto:**  

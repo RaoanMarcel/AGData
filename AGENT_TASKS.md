@@ -1088,7 +1088,7 @@ RefreshIndicator(
 
 ## TASK-031 · 🟡 Média · Unit tests para lógica pura: iniciais do avatar e paginação
 
-**Status:** `pending`  
+**Status:** `done`  
 **Arquivos:** 
 - `mobile/test/unit/avatar_iniciais_test.dart` (NOVO)
 - `mobile/test/unit/paginacao_logic_test.dart` (NOVO)

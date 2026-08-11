@@ -1481,7 +1481,7 @@ Commit: `feat: busca por nome de talhão no HistoricoScreen`
 
 ## TASK-036 · 🟡 Média · Unit test para exclusão de leituras e widget test para SettingsPage
 
-**Status:** `pending`  
+**Status:** `done`  
 **Arquivos novos:**
 - `mobile/test/unit/database_delete_test.dart`
 - `mobile/test/widget/settings_page_structure_test.dart`

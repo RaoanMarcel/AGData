@@ -1760,7 +1760,7 @@ Commit: `feat: Sentry nos catch blocks de ClimaCard e AdminPage`
 
 ## TASK-040 · 🟡 Média · Unit tests para lógica de filtro do RelatorioPage
 
-**Status:** `pending`  
+**Status:** `done`  
 **Arquivo novo:** `mobile/test/unit/relatorio_filter_test.dart`
 
 **Contexto:**  

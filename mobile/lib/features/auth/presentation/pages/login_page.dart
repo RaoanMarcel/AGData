@@ -20,7 +20,9 @@ class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
   
   bool _carregando = false;
-  bool _senhaVisivel = false; 
+  bool _senhaVisivel = false;
+
+  final _emailRegex = RegExp(r'^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$');
 
   Future<void> _fazerLogin() async {
     if (!_formKey.currentState!.validate()) return;
@@ -148,7 +150,11 @@ class _LoginPageState extends State<LoginPage> {
                     hintText: "seu@email.com",
                     prefixIcon: Icon(Icons.email_outlined),
                   ),
-                  validator: (v) => (v == null || !RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(v)) ? "Insira um e-mail válido" : null,
+                  validator: (v) {
+                    if (v == null || v.isEmpty) return 'E-mail obrigatório';
+                    if (!_emailRegex.hasMatch(v.trim())) return 'E-mail inválido';
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 20),
 

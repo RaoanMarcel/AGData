@@ -69,7 +69,7 @@ Em `admin_page.dart`:
 
 ## TASK-003 · 🟡 Média · Corrigir regex de validação de email
 
-**Status:** `pending`  
+**Status:** `done`  
 **Arquivos:** `mobile/lib/features/auth/presentation/pages/login_page.dart`, `mobile/lib/features/auth/presentation/pages/add_user_page.dart`
 
 **Contexto:**  

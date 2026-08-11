@@ -36,6 +36,8 @@ class _SuperAdminPageState extends State<SuperAdminPage> {
 
   bool _carregando = false;
 
+  final _emailRegex = RegExp(r'^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$');
+
   // Formatadores
   final _cpfFormatter = MaskTextInputFormatter(mask: '###.###.###-##');
   final _cnpjFormatter = MaskTextInputFormatter(mask: '##.###.###/####-##');
@@ -315,10 +317,11 @@ class _SuperAdminPageState extends State<SuperAdminPage> {
               prefixIcon: Icon(Icons.alternate_email),
             ),
             keyboardType: TextInputType.emailAddress,
-            validator: (v) =>
-                (v == null || !RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(v))
-                    ? 'E-mail inválido'
-                    : null,
+            validator: (v) {
+              if (v == null || v.isEmpty) return 'E-mail obrigatório';
+              if (!_emailRegex.hasMatch(v.trim())) return 'E-mail inválido';
+              return null;
+            },
           ),
           const SizedBox(height: 10),
           TextFormField(

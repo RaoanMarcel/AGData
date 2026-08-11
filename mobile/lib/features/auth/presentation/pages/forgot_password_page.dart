@@ -15,6 +15,8 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   final _emailController = TextEditingController();
   bool _isLoading = false;
 
+  final _emailRegex = RegExp(r'^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$');
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -97,10 +99,11 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                   labelText: "E-mail cadastrado *",
                   prefixIcon: Icon(Icons.email_outlined),
                 ),
-                validator: (v) => (v == null ||
-                        !RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(v))
-                    ? "E-mail inválido"
-                    : null,
+                validator: (v) {
+                  if (v == null || v.isEmpty) return 'E-mail obrigatório';
+                  if (!_emailRegex.hasMatch(v.trim())) return 'E-mail inválido';
+                  return null;
+                },
               ),
               const SizedBox(height: 24),
               SizedBox(

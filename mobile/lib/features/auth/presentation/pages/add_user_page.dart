@@ -34,6 +34,8 @@ class _AddUserPageState extends State<AddUserPage> {
   UserRole _roleSelecionada = UserRole.operador;
   bool _carregando = false;
 
+  final _emailRegex = RegExp(r'^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$');
+
   final _phoneFormatter = MaskTextInputFormatter(
     mask: '(##) #####-####',
     filter: {"#": RegExp(r'[0-9]')},
@@ -218,7 +220,11 @@ class _AddUserPageState extends State<AddUserPage> {
                   prefixIcon: Icon(Icons.alternate_email),
                 ),
                 keyboardType: TextInputType.emailAddress,
-                validator: (v) => (v == null || !RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(v)) ? "E-mail inválido" : null,
+                validator: (v) {
+                  if (v == null || v.isEmpty) return 'E-mail obrigatório';
+                  if (!_emailRegex.hasMatch(v.trim())) return 'E-mail inválido';
+                  return null;
+                },
               ),
               const SizedBox(height: 16),
               

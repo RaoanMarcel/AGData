@@ -596,6 +596,8 @@ class _Thumb extends StatelessWidget {
         height: 72,
         width: 72,
         fit: BoxFit.cover,
+        cacheWidth: 144,
+        cacheHeight: 144,
         errorBuilder: (context, error, stackTrace) => Container(
           height: 72,
           width: 72,

@@ -511,7 +511,7 @@ static const Color warningContainer = Color(0xFFFBE9E7);
 
 ## TASK-016 · 🟡 Média · HistoricoScreen — limitar resolução de thumbnails para evitar jank
 
-**Status:** `pending`  
+**Status:** `done`  
 **Arquivo:** `mobile/lib/features/diagnostico/presentation/pages/historico_screen.dart`
 
 **Contexto:**  

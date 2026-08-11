@@ -1707,7 +1707,7 @@ Commit: `feat: botão de compartilhar resultado individual no LeituraDetalheScre
 
 ## TASK-039 · 🟡 Média · Sentry em ClimaCard, AdminPage e sync_repository catch blocks restantes
 
-**Status:** `pending`  
+**Status:** `done`  
 **Arquivos:**
 - `mobile/lib/features/clima/presentation/clima_card.dart`
 - `mobile/lib/features/auth/presentation/pages/admin_page.dart`

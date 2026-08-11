@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -59,7 +61,8 @@ class _AdminPageState extends State<AdminPage> {
       if (await canLaunchUrl(url)) {
         await launchUrl(url, mode: LaunchMode.externalApplication);
       }
-    } catch (e) {
+    } catch (e, st) {
+      unawaited(Sentry.captureException(e, stackTrace: st));
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Não foi possível abrir o WhatsApp.")),
@@ -82,7 +85,9 @@ class _AdminPageState extends State<AdminPage> {
               try {
                 await _firestore.collection('users').doc(user.uid).delete();
                 if (mounted) Navigator.pop(context);
-              } catch (e) {
+              } catch (e, st) {
+                unawaited(Sentry.captureException(e, stackTrace: st));
+                if (mounted) Navigator.pop(context);
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text("Erro ao excluir: $e")),

@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_dimens.dart';
 import '../../diagnostico/data/datasources/location_service.dart';
@@ -49,7 +51,8 @@ class _ClimaCardState extends State<ClimaCard> {
         _ultimaAtualizacao = DateTime.now();
         _carregando = false;
       });
-    } catch (_) {
+    } catch (e, st) {
+      unawaited(Sentry.captureException(e, stackTrace: st));
       _falhar();
     }
   }

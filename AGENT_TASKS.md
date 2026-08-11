@@ -289,7 +289,7 @@ Há apenas um placeholder em `mobile/test/infra_test.dart`. O app tem lógica pu
 
 ## TASK-009 · 🟢 Baixa · Testes unitários — lógica de filtro e ordenação do SelecaoTalhaoScreen
 
-**Status:** `pending`  
+**Status:** `done`  
 **Arquivo a criar:** `mobile/test/unit/selecao_talhao_filter_test.dart`
 
 **Contexto:**  

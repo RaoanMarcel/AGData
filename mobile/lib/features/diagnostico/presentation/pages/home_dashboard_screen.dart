@@ -285,13 +285,12 @@ class _UltimasLeituras extends StatelessWidget {
         ),
         const SizedBox(height: AppSpacing.sm),
         FutureBuilder<List<LeituraModel>>(
-          future: DatabaseService().buscarTodasLeituras(),
+          future: DatabaseService().buscarLeiturasPaginadas(limite: 3, offset: 0),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());
             }
-            final todas = snapshot.data ?? [];
-            final recentes = todas.reversed.take(3).toList();
+            final recentes = snapshot.data ?? [];
             if (recentes.isEmpty) {
               return Padding(
                 padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),

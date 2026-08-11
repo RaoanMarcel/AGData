@@ -1263,4 +1263,320 @@ Commit: `test: testes de lógica de estados do DiagnosticoStatus`
 
 ---
 
-_Última atualização pelo planejador: iteração 6 — 2026-08-11_
+---
+
+## TASK-033 · 🔴 Alta · Fix: _UltimasLeituras usa buscarTodasLeituras — trocar por buscarLeiturasPaginadas(limite: 3)
+
+**Status:** `done`  
+**Arquivo:** `mobile/lib/features/diagnostico/presentation/pages/home_dashboard_screen.dart`
+
+**Contexto:**  
+O widget `_UltimasLeituras` no dashboard usa `FutureBuilder` com `DatabaseService().buscarTodasLeituras()` para exibir apenas as 3 leituras mais recentes. Isso carrega **todo** o banco Isar em memória só para pegar 3 registros — ineficiente e piora conforme o banco cresce.
+
+**O que fazer:**
+
+Localizar na classe `_UltimasLeituras` (linha ~288) o `FutureBuilder` que usa `buscarTodasLeituras()` e substituir por `buscarLeiturasPaginadas`:
+
+```dart
+// ANTES:
+future: DatabaseService().buscarTodasLeituras(),
+
+// DEPOIS:
+future: DatabaseService().buscarLeiturasPaginadas(limite: 3, offset: 0),
+```
+
+Após essa mudança, o snapshot já retorna exatamente 3 itens (os mais recentes, ordenados por data desc). Remover qualquer `.take(3)` ou `.sublist(0, 3)` que existia para limitar a lista, pois não é mais necessário.
+
+**Verificar:** se havia `.take(3)` no builder do FutureBuilder, removê-lo. Se não havia e o código simplesmente iterava sobre `dados`, deixar como está — a paginação já limita.
+
+`dart analyze mobile` → sem erros.  
+Commit: `perf: _UltimasLeituras usa buscarLeiturasPaginadas ao invés de carregar tudo`
+
+**Critérios de aceitação:**
+- Nenhuma chamada a `buscarTodasLeituras()` no `home_dashboard_screen.dart`
+- Dashboard mostra as 3 leituras mais recentes corretamente
+- `dart analyze` limpo
+
+---
+
+## TASK-034 · 🔴 Alta · Exclusão de leituras selecionadas no HistoricoScreen
+
+**Status:** `pending`  
+**Arquivos:**
+- `mobile/lib/features/diagnostico/data/datasources/database_service.dart`
+- `mobile/lib/features/diagnostico/presentation/pages/historico_screen.dart`
+
+**Contexto:**  
+O HistoricoScreen já tem multi-seleção implementada (`_selecionados`, `_alternarSelecao()`) e usa a seleção para envio via WhatsApp. Porém, não há como **excluir** leituras selecionadas do dispositivo. Um botão de deletar é fundamental para gestão de dados locais.
+
+**O que fazer:**
+
+**1. Em `DatabaseService`**, adicionar método de exclusão por IDs:
+```dart
+Future<void> deletarLeituras(List<int> ids) async {
+  await isar.writeTxn(() async {
+    await isar.leituraModels.deleteAll(ids);
+  });
+}
+```
+
+**2. Em `HistoricoScreen.build()` — AppBar.actions**, adicionar ícone de delete quando há itens selecionados:
+```dart
+if (_selecionados.isNotEmpty)
+  IconButton(
+    icon: const Icon(Icons.delete_outline, color: AppColors.danger),
+    tooltip: 'Excluir selecionados',
+    onPressed: _confirmarExclusao,
+  ),
+// ícones existentes (filter, share) depois
+```
+
+**3. Implementar `_confirmarExclusao()`:**
+```dart
+Future<void> _confirmarExclusao() async {
+  final n = _selecionados.length;
+  final confirmar = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: const Text('Excluir leituras?'),
+      content: Text(
+        'Serão excluídas $n leitura(s) deste dispositivo. '
+        'Leituras já sincronizadas com a nuvem não serão afetadas.',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, false),
+          child: const Text('Cancelar'),
+        ),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.danger,
+            foregroundColor: AppColors.onPrimary,
+          ),
+          onPressed: () => Navigator.pop(ctx, true),
+          child: const Text('Excluir'),
+        ),
+      ],
+    ),
+  );
+  if (confirmar != true || !mounted) return;
+
+  final ids = List<int>.from(_selecionados);
+  await _databaseService.deletarLeituras(ids);
+  setState(() => _selecionados.clear());
+  await _recarregar();
+
+  if (mounted) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('$n leitura(s) excluída(s).')),
+    );
+  }
+}
+```
+
+**Observação:** `AppColors.onPrimary` deve existir — verificar no `app_colors.dart`. Se não existir, usar `Colors.white`.
+
+`dart analyze mobile` → sem erros.  
+Commit: `feat: exclusão de leituras selecionadas no HistoricoScreen`
+
+**Critérios de aceitação:**
+- Ícone de lixeira aparece na AppBar quando há itens selecionados
+- Dialog de confirmação exibe número de itens
+- Após confirmação, itens são removidos do banco e da lista
+- `dart analyze` limpo
+
+---
+
+## TASK-035 · 🟡 Média · Busca por texto no HistoricoScreen
+
+**Status:** `pending`  
+**Arquivo:** `mobile/lib/features/diagnostico/presentation/pages/historico_screen.dart`
+
+**Contexto:**  
+O filtro atual cobre data, tipo de doença e grau de confiança, mas não permite busca textual por nome de talhão. Usuários com muitos talhões (T1, T2...T30) precisam rolar a lista para encontrar um específico.
+
+**O que fazer:**
+
+**1. Adicionar variável de busca:**
+```dart
+String _buscaTexto = '';
+```
+
+**2. Adicionar campo de busca na AppBar** — usar `PreferredSize` com `TextField` expandido ou simplesmente `SearchBar`:
+
+No `build()`, converter a AppBar para incluir campo de busca:
+```dart
+appBar: AppBar(
+  title: _buscaAtiva
+    ? TextField(
+        autofocus: true,
+        decoration: const InputDecoration(
+          hintText: 'Buscar talhão...',
+          border: InputBorder.none,
+          hintStyle: TextStyle(color: Colors.white70),
+        ),
+        style: const TextStyle(color: Colors.white),
+        cursorColor: Colors.white,
+        onChanged: (valor) {
+          setState(() => _buscaTexto = valor);
+          _aplicarFiltros();
+        },
+      )
+    : Text(widget.talhaoInicial == null ? 'Relatórios de campo' : 'Relatórios · ${widget.talhaoInicial}'),
+  actions: [
+    if (!_buscaAtiva)
+      IconButton(
+        icon: const Icon(Icons.search),
+        tooltip: 'Buscar por talhão',
+        onPressed: () => setState(() => _buscaAtiva = true),
+      ),
+    if (_buscaAtiva)
+      IconButton(
+        icon: const Icon(Icons.close),
+        onPressed: () {
+          setState(() {
+            _buscaAtiva = false;
+            _buscaTexto = '';
+          });
+          _aplicarFiltros();
+        },
+      ),
+    // demais actions existentes
+  ],
+),
+```
+
+Adicionar campos: `bool _buscaAtiva = false;` e `String _buscaTexto = '';`
+
+**3. Em `_aplicarFiltros()`**, adicionar condição de busca textual:
+```dart
+bool passaBusca = true;
+if (_buscaTexto.isNotEmpty) {
+  passaBusca = leitura.talhao.toLowerCase()
+      .contains(_buscaTexto.trim().toLowerCase());
+}
+return passaData && passaDoenca && passaConfianca && passaBusca;
+```
+
+**4. Quando a busca está ativa** e o usuário pressiona "back" no iOS/Android, deve sair do modo busca (não fechar a tela). Usar `PopScope` ou `WillPopScope` para interceptar:
+```dart
+// No build, envolver o Scaffold:
+if (_buscaAtiva) {
+  // PopScope com canPop: false quando busca ativa
+}
+```
+Ou mais simples: quando `_buscaAtiva`, o `IconButton(Icons.close)` na AppBar já fecha a busca. No Android, o botão back fecha a busca — basta testar.
+
+`dart analyze mobile` → sem erros.  
+Commit: `feat: busca por nome de talhão no HistoricoScreen`
+
+**Critérios de aceitação:**
+- Ícone de lupa na AppBar
+- Toque na lupa → AppBar vira campo de texto
+- Digitando nome do talhão filtra a lista em tempo real
+- Botão X limpa busca e restaura título
+- `dart analyze` limpo
+
+---
+
+## TASK-036 · 🟡 Média · Unit test para exclusão de leituras e widget test para SettingsPage
+
+**Status:** `pending`  
+**Arquivos novos:**
+- `mobile/test/unit/database_delete_test.dart`
+- `mobile/test/widget/settings_page_structure_test.dart`
+
+**Contexto:**  
+Com a adição de `deletarLeituras()` no DatabaseService, é útil documentar o comportamento esperado. E a SettingsPage não tem cobertura de widget test.
+
+**O que fazer:**
+
+**Arquivo 1 — `mobile/test/unit/database_delete_test.dart`:**
+
+Testar a lógica de IDs de exclusão como função pura (sem Isar):
+```dart
+import 'package:flutter_test/flutter_test.dart';
+
+/// Espelho da lógica de filtragem após exclusão
+List<int> idsAExcluir(List<int> selecionados) => List<int>.from(selecionados);
+
+bool idFoiExcluido(int id, List<int> idsExcluidos) => idsExcluidos.contains(id);
+
+void main() {
+  group('lógica de exclusão de leituras', () {
+    test('idsAExcluir retorna cópia dos selecionados', () {
+      final sel = [1, 2, 3];
+      final ids = idsAExcluir(sel);
+      expect(ids, equals([1, 2, 3]));
+      // deve ser uma cópia, não referência
+      sel.add(4);
+      expect(ids.length, 3);
+    });
+
+    test('idFoiExcluido retorna true para ids excluídos', () {
+      expect(idFoiExcluido(2, [1, 2, 3]), isTrue);
+    });
+
+    test('idFoiExcluido retorna false para ids não excluídos', () {
+      expect(idFoiExcluido(5, [1, 2, 3]), isFalse);
+    });
+
+    test('exclusão de lista vazia não afeta nada', () {
+      final ids = idsAExcluir([]);
+      expect(ids, isEmpty);
+    });
+  });
+}
+```
+
+**Arquivo 2 — `mobile/test/widget/settings_page_structure_test.dart`:**
+
+Testar que a SettingsPage renderiza sem crash com dados mínimos. Precisará de mock do `SessionController` / `sl`:
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+// Importar o widget e mocks necessários
+
+void main() {
+  testWidgets('SettingsPage renderiza as seções principais', (tester) async {
+    // Se não for possível mockar sl<SessionController> facilmente,
+    // testar apenas os sub-widgets reutilizáveis que não dependem de DI:
+    // _SecaoLabel, _InfoTile, _TapTile
+    
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: Column(
+            children: [
+              // Testar o widget _SecaoLabel diretamente não é possível (private)
+              // Testar que SettingsPage pode ser instanciada como widget
+            ],
+          ),
+        ),
+      ),
+    );
+    expect(find.byType(Scaffold), findsOneWidget);
+  });
+  
+  // Foco principal: testar os widgets PÚBLICOS reutilizáveis se existirem
+  // Se SettingsPage depende demais de DI, pular o widget test e focar no unit test
+}
+```
+
+**Importante:** Se o `SessionController` via `sl<>` for difícil de mockar sem infraestrutura de test (Firebase, Isar), **simplificar o teste** para verificar apenas os sub-widgets de UI pura que possam ser extraídos ou testados em isolamento. Não forçar um widget test que precise de Firebase mock — isso pertence a integration tests.
+
+Adapte os testes ao que for testável de forma simples e direta.
+
+Rodar `flutter test test/unit/database_delete_test.dart` e verificar que passa.
+
+Commit: `test: testes para lógica de exclusão e estrutura de settings`
+
+**Critérios de aceitação:**
+- `database_delete_test.dart` passa com todos os testes
+- `settings_page_structure_test.dart` passa (ou é simplificado ao que for testável sem DI)
+- `dart analyze` limpo
+
+---
+
+_Última atualização pelo planejador: iteração 7 — 2026-08-11_

@@ -885,7 +885,7 @@ Em `sync_repository.dart`, nos blocos catch sem Sentry (linhas ~86 e ~110):
 
 ## TASK-026 · 🔴 Alta · Substituir Colors.white por AppColors.onPrimary/textOnDark no HomeDashboardScreen
 
-**Status:** `pending`  
+**Status:** `done`  
 **Arquivo:** `mobile/lib/features/diagnostico/presentation/pages/home_dashboard_screen.dart`
 
 **Contexto:**  

@@ -474,7 +474,7 @@ class _BotaoGerar extends StatelessWidget {
                     width: 18,
                     height: 18,
                     child: CircularProgressIndicator(
-                        strokeWidth: 2, color: Colors.white),
+                        strokeWidth: 2, color: AppColors.onPrimary),
                   )
                 : const Icon(Icons.picture_as_pdf_outlined),
             label: Text(gerando ? 'Gerando PDF...' : 'Gerar e Compartilhar PDF'),

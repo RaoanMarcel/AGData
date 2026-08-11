@@ -381,7 +381,7 @@ class _PrescricaoPageState extends State<PrescricaoPage> {
                                     width: 18,
                                     height: 18,
                                     child: CircularProgressIndicator(
-                                        strokeWidth: 2, color: Colors.white),
+                                        strokeWidth: 2, color: AppColors.onPrimary),
                                   )
                                 : const Icon(Icons.agriculture),
                             label: Text(_exportando

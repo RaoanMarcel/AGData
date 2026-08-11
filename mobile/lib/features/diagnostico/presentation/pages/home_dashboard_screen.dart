@@ -99,10 +99,10 @@ class _TopBar extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(AppSpacing.sm),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.18),
+              color: AppColors.onPrimary.withValues(alpha: 0.18),
               borderRadius: BorderRadius.circular(AppRadius.md),
             ),
-            child: const Icon(Icons.eco, color: Colors.white, size: 24),
+            child: const Icon(Icons.eco, color: AppColors.textOnDark, size: 24),
           ),
           const SizedBox(width: AppSpacing.md),
           Expanded(
@@ -111,12 +111,12 @@ class _TopBar extends StatelessWidget {
               children: [
                 Text('AGdata',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: Colors.white,
+                          color: AppColors.textOnDark,
                           fontWeight: FontWeight.w800,
                         )),
                 Text(subtitulo,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.white.withValues(alpha: 0.9),
+                          color: AppColors.textOnDark.withValues(alpha: 0.9),
                         )),
               ],
             ),
@@ -160,7 +160,7 @@ class _MapControlCard extends StatelessWidget {
                 // Malha simbolizando um mapa.
                 CustomPaint(
                   painter: _MalhaMapaPainter(
-                    color: Colors.white.withValues(alpha: 0.10),
+                    color: AppColors.onPrimary.withValues(alpha: 0.10),
                   ),
                 ),
                 // Botão central com ícone de mapa.
@@ -169,14 +169,14 @@ class _MapControlCard extends StatelessWidget {
                     height: 72,
                     width: 72,
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.22),
+                      color: AppColors.onPrimary.withValues(alpha: 0.22),
                       shape: BoxShape.circle,
                       border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.55),
+                          color: AppColors.onPrimary.withValues(alpha: 0.55),
                           width: 1.5),
                     ),
                     child: const Icon(Icons.map_outlined,
-                        color: Colors.white, size: 38),
+                        color: AppColors.textOnDark, size: 38),
                   ),
                 ),
               ],

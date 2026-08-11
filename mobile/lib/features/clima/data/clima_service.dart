@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 /// Condição atual + previsão dos próximos dias.
 class ClimaAtual {
@@ -136,7 +138,8 @@ class ClimaService {
         return '$nome, ${codigoUf.split('-').last}';
       }
       return nome;
-    } catch (_) {
+    } catch (e, st) {
+      unawaited(Sentry.captureException(e, stackTrace: st));
       return null;
     }
   }

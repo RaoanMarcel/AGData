@@ -39,7 +39,9 @@ class _AdminPageState extends State<AdminPage> {
       if (doc.exists) {
         return (doc.data() as Map<String, dynamic>)['name'] ?? 'Empresa';
       }
-    } catch (_) {}
+    } catch (e, st) {
+      unawaited(Sentry.captureException(e, stackTrace: st));
+    }
     return 'Empresa';
   }
 

@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../../../core/di/injection_container.dart';
@@ -77,7 +79,8 @@ class _RelatorioPageState extends State<RelatorioPage> {
             .get();
         _empresaNome =
             (doc.data()?['name'] as String?) ?? session.usuario?.name ?? '';
-      } catch (_) {
+      } catch (e, st) {
+        unawaited(Sentry.captureException(e, stackTrace: st));
         _empresaNome = session.usuario?.name ?? '';
       }
     } else {

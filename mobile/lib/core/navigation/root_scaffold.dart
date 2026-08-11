@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import '../../../features/auth/data/models/auth_model.dart';
 import '../../../features/auth/data/repositories/auth_repository.dart';
 import '../../../features/auth/presentation/controller/session_controller.dart';
@@ -246,7 +248,9 @@ class _RootScaffoldState extends State<RootScaffold> {
               Navigator.pop(ctx);
               try {
                 await sl<AuthRepository>().logout();
-              } catch (_) {}
+              } catch (e, st) {
+                unawaited(Sentry.captureException(e, stackTrace: st));
+              }
               if (mounted) {
                 Navigator.of(context).pushNamedAndRemoveUntil('/', (r) => false);
               }

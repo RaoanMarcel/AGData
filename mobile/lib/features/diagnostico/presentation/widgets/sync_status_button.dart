@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../data/datasources/database_service.dart';
 import '/../infra/repositories/sync_repository.dart';
@@ -78,7 +79,8 @@ class _SyncStatusButtonState extends State<SyncStatusButton> {
         mensagem = 'Dados sincronizados com a nuvem!';
         cor = AppColors.syncSuccess;
         resultado = _SyncResultado.sucesso;
-      } catch (_) {
+      } catch (e, st) {
+        unawaited(Sentry.captureException(e, stackTrace: st));
         mensagem = 'Erro na sincronização. Tente mais tarde.';
         cor = AppColors.syncError;
         resultado = _SyncResultado.erro;

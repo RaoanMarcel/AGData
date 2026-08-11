@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../auth/presentation/controller/session_controller.dart';
@@ -241,7 +243,9 @@ class CustomDrawer extends StatelessWidget {
               Navigator.pop(context);
               try {
                 await sl<AuthRepository>().logout();
-              } catch (_) {}
+              } catch (e, st) {
+                unawaited(Sentry.captureException(e, stackTrace: st));
+              }
               if (context.mounted) {
                 Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
               }
